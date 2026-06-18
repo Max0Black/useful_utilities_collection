@@ -1,2 +1,7 @@
 PySide6
 keyboard
+psutil
+sounddevice
+numpy
+pycaw
+comtypes
