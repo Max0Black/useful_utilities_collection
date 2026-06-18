@@ -92,6 +92,12 @@ $env:PYTHONPATH="src"
 python -m useful_utilities_collection.main
 ```
 
+### Create .exe file
+
+```powershell
+python -m PyInstaller --name "UsefulUtilitiesCollection" --onefile --windowed --paths src src\useful_utilities_collection\main.py
+```
+
 ## Requirements
 
 - Python 3.11+
@@ -100,3 +106,4 @@ python -m useful_utilities_collection.main
 ## Notes
 
 The current keyboard lock feature is Windows-focused. The overall application structure is intentionally modular so future utilities can support Linux and macOS with minimal structural changes.
+

@@ -1,71 +1,145 @@
 APP_STYLE = """
 QMainWindow {
-    background: #0f1115;
+    background: #0d1117;
 }
 
 QWidget {
-    color: #e8ecf1;
+    color: #e6edf3;
     font-family: "Segoe UI", "Inter", sans-serif;
-    font-size: 14px;
+    font-size: 10pt;
+}
+
+QWidget#AppRoot {
+    background: #11161d;
+    border-radius: 0px;
+}
+
+QStackedWidget#ContentStack {
+    background: #11161d;
+    border: 1px solid #212834;
+    border-radius: 18px;
 }
 
 QWidget#Sidebar {
-    background: #171a21;
-    border: 1px solid #232833;
+    background: #161b22;
+    border: 1px solid #2d333b;
     border-radius: 18px;
     min-width: 220px;
     max-width: 240px;
 }
 
 QLabel#SidebarTitle {
-    font-size: 20px;
-    font-weight: 700;
     color: #ffffff;
+    font-size: 15pt;
+    font-weight: 700;
+    background: transparent;
 }
 
 QLabel#PageTitle {
-    font-size: 26px;
-    font-weight: 700;
     color: #ffffff;
+    font-size: 21pt;
+    font-weight: 700;
+    background: transparent;
+}
+
+QLabel#SectionTitle {
+    color: #ffffff;
+    font-size: 11pt;
+    font-weight: 600;
+    background: transparent;
 }
 
 QLabel#MutedText {
-    color: #9aa4b2;
-    font-size: 14px;
+    color: #9da7b3;
+    font-size: 10pt;
+    background: transparent;
 }
 
-QLabel#StatusCard {
-    background: #171a21;
-    border: 1px solid #232833;
+QLabel#CardValue {
+    color: #e6edf3;
+    font-size: 18pt;
+    font-weight: 700;
+    background: transparent;
+}
+
+QLabel#CardValue[role="success"] {
+    color: #2ea043;
+}
+
+QLabel#CardValue[role="danger"] {
+    color: #f85149;
+}
+
+QLabel#CardValue[role="accent"] {
+    color: #58a6ff;
+}
+
+QLabel#CardValue[role="neutral"] {
+    color: #e6edf3;
+}
+
+QFrame#Panel {
+    background: #161b22;
+    border: 1px solid #2d333b;
     border-radius: 16px;
-    padding: 18px;
-    font-size: 16px;
-    color: #d9e2ec;
 }
 
 QPushButton {
-    background: #171a21;
-    border: 1px solid #2c3340;
+    background: #161b22;
+    border: 1px solid #2d333b;
     border-radius: 12px;
     padding: 12px 14px;
     text-align: left;
+    color: #e6edf3;
 }
 
 QPushButton:hover {
-    background: #1d2330;
-    border-color: #3a4354;
+    background: #1f2630;
+    border-color: #3a4552;
+}
+
+QPushButton:checked {
+    background: #1f6feb;
+    border-color: #1f6feb;
+    color: #ffffff;
 }
 
 QPushButton#PrimaryButton {
-    background: #3b82f6;
-    color: white;
+    background: #1f6feb;
     border: none;
+    border-radius: 12px;
+    padding: 14px 18px;
     text-align: center;
     font-weight: 600;
-    padding: 14px 18px;
+    color: #ffffff;
 }
 
 QPushButton#PrimaryButton:hover {
-    background: #2563eb;
+    background: #388bfd;
+}
+
+QComboBox, QCheckBox, QProgressBar, QSlider {
+    font-size: 10pt;
+}
+
+QProgressBar {
+    border: 1px solid #2d333b;
+    border-radius: 8px;
+    background: #0f141a;
+    text-align: center;
+    min-height: 18px;
+}
+
+QProgressBar::chunk {
+    background: #1f6feb;
+    border-radius: 7px;
+}
+
+QLabel#ToastMessage {
+    background-color: #1f6feb;
+    color: white;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-weight: 600;
 }
 """

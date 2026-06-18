@@ -9,11 +9,13 @@ class KeyboardLockController:
         if self.context.keyboard_lock_service.lock():
             self.context.state.keyboard_locked = True
             self.context.state.keyboard_mode = "Locked"
+            self.context.notify_state_changed()
 
     def unlock(self) -> None:
         if self.context.keyboard_lock_service.unlock():
             self.context.state.keyboard_locked = False
             self.context.state.keyboard_mode = "Unlocked"
+            self.context.notify_state_changed()
 
     def toggle(self) -> None:
         if self.context.state.keyboard_locked:

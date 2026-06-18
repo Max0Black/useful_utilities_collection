@@ -12,6 +12,8 @@ from PySide6.QtWidgets import (
 from useful_utilities_collection.core.app_context import AppContext
 from useful_utilities_collection.modules.dashboard.module import create_module as create_dashboard_module
 from useful_utilities_collection.modules.keyboard_lock.module import create_module as create_keyboard_lock_module
+from useful_utilities_collection.modules.microphone_guard.module import create_module as create_microphone_guard_module
+
 
 class MainWindow(QMainWindow):
     def __init__(self, context: AppContext):
@@ -20,6 +22,7 @@ class MainWindow(QMainWindow):
         self.modules = [
             create_dashboard_module(),
             create_keyboard_lock_module(),
+            create_microphone_guard_module(),
         ]
         self.nav_buttons: list[QPushButton] = []
 
@@ -27,6 +30,7 @@ class MainWindow(QMainWindow):
         self.resize(1120, 760)
 
         root = QWidget()
+        root.setObjectName("AppRoot")
         self.setCentralWidget(root)
 
         layout = QHBoxLayout(root)
@@ -45,6 +49,7 @@ class MainWindow(QMainWindow):
         sidebar_layout.addSpacing(12)
 
         self.stack = QStackedWidget()
+        self.stack.setObjectName("ContentStack")
 
         for index, module in enumerate(self.modules):
             button = QPushButton(module.title)
