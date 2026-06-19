@@ -64,18 +64,22 @@ QLabel#CardValue {
 
 QLabel#CardValue[role="success"] {
     color: #2ea043;
+    font-weight: 700;
 }
 
 QLabel#CardValue[role="danger"] {
     color: #f85149;
+    font-weight: 700;
 }
 
 QLabel#CardValue[role="accent"] {
     color: #58a6ff;
+    font-weight: 700;
 }
 
 QLabel#CardValue[role="neutral"] {
     color: #e6edf3;
+    font-weight: 700;
 }
 
 QFrame#Panel {
@@ -133,6 +137,14 @@ QProgressBar {
 QProgressBar::chunk {
     background: #1f6feb;
     border-radius: 7px;
+}
+
+QLabel#ToastMessage {
+    background-color: #1f6feb;
+    color: white;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-weight: 600;
 }
 
 QLabel#ToastMessage {

@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
 
 from useful_utilities_collection.core.app_context import AppContext
 from useful_utilities_collection.modules.dashboard.module import create_module as create_dashboard_module
-from useful_utilities_collection.modules.keyboard_lock.module import create_module as create_keyboard_lock_module
+from useful_utilities_collection.modules.input_lock.module import create_module as create_input_lock_module
 from useful_utilities_collection.modules.microphone_guard.module import create_module as create_microphone_guard_module
 
 
@@ -21,7 +21,7 @@ class MainWindow(QMainWindow):
         self.context = context
         self.modules = [
             create_dashboard_module(),
-            create_keyboard_lock_module(),
+            create_input_lock_module(),
             create_microphone_guard_module(),
         ]
         self.nav_buttons: list[QPushButton] = []
@@ -83,5 +83,5 @@ class MainWindow(QMainWindow):
                 page.refresh()
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        self.context.keyboard_lock_service.unlock()
+        self.context.input_lock_service.unlock()
         event.accept()
