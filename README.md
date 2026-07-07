@@ -97,8 +97,8 @@ useful_utilities_collection/
 ├─ src/
 │  └─ useful_utilities_collection/
 │     ├─ core/              # Translation engine, Application context and state
-│     ├─ languages/         # de.json and en.json translations
-│     ├─ assets/            # App icons (PNG, ICO)
+│     ├─ languages/         # translations files
+│     ├─ assets/            # App icons
 │     ├─ modules/           # Pages & Module definitions (Dashboard, Input Lock, Mic Guard, Settings)
 │     ├─ services/          # Services (Keyboard/Mouse hooks, Sound/Volume APIs, Settings)
 │     ├─ ui/                # Main window chassis and stylesheets
