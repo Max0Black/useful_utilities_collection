@@ -12,23 +12,23 @@ A modern, high-performance, and modular desktop utility suite built with **Pytho
 
 ### 1. 📊 Dashboard
 A centralized control center showing live system status at a glance:
-* **Keyboard Lock status** (Locked / Unlocked)
-* **Mouse Lock status** (Locked / Unlocked)
+* **Keyboard Lock status**
+* **Mouse Lock status**
 * **Microphone Guard status** (Active with current vs. target volume)
 
-### 2. 🔒 Input Lock (Eingabesperre)
+### 2. 🔒 Input Lock
 Temporarily lock inputs to clean your desk, clean your keyboard, or protect against kids/pets:
 * **Keyboard Lock**: Block all keyboard inputs while keeping the mouse functional.
 * **Mouse Lock**: Lock mouse movement and clicks.
 * **Emergency Unlock**: Unlock the mouse at any time with a customizable global key shortcut (Default: `Shift+Alt+M`).
 
-### 3. 🎙️ Microphone Guard (Mikrofon-Schutz)
+### 3. 🎙️ Microphone Guard
 Prevent apps (like MS Teams, Zoom, Discord, etc.) from stealthily changing your microphone level:
 * **Constant Monitoring**: Checks your Windows default microphone level at custom intervals.
 * **Automatic Restoration**: Instantly resets the volume to your desired target (e.g. 80%) if another program alters it.
 * **Activity Logs**: Track exactly when and how much volume was corrected.
 
-### 4. ⚙️ Settings (Einstellungen)
+### 4. ⚙️ Settings
 Customize behavior, language, and performance:
 * **Multi-Language**: Full English & German support.
 * **Minimize to Tray**: Minimize the application into the Windows system tray to keep it running invisibly in the background.
