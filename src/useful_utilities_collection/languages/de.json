@@ -93,6 +93,14 @@
     "toast_restored": "Ziellautstärke auf {level}% wiederhergestellt.",
     "toast_restore_failed": "Mikrofonlautstärke konnte nicht wiederhergestellt werden.",
     "toast_volume_corrected": "Mikrofonlautstärke wurde von {previous}% auf {target}% zurückgesetzt.",
+    "toast_multiple_corrected": "Mikrofonlautstärke wiederhergestellt:\n{details}",
+    "guard_mode_label": "Schutzmodus:",
+    "guard_mode_selected": "Nur ausgewähltes Mikrofon",
+    "guard_mode_all": "Alle aktiven Mikrofone",
+    "guard_mode_specific": "Nur bestimmte Mikrofone",
+    "select_device_label": "Zu konfigurierendes Mikrofon:",
+    "device_guard_enabled_checkbox": "Schutz für dieses Gerät aktivieren",
+    "toast_guard_mode_changed": "Schutzmodus geändert auf: {mode}.",
     "notification_title": "Mikrofon-Schutz"
   },
   "settings": {

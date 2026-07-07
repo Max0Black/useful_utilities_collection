@@ -1,6 +1,7 @@
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -66,8 +67,25 @@ class MicrophoneGuardPage(QWidget):
         level_layout.setContentsMargins(18, 18, 18, 18)
         level_layout.setSpacing(12)
 
-        self.default_label = QLabel()
-        self.default_label.setObjectName("MutedText")
+        # Guard mode row
+        guard_mode_row = QHBoxLayout()
+        self.guard_mode_label = QLabel()
+        self.guard_mode_combo = QComboBox()
+        self.guard_mode_combo.currentIndexChanged.connect(self.on_guard_mode_changed)
+        guard_mode_row.addWidget(self.guard_mode_label)
+        guard_mode_row.addWidget(self.guard_mode_combo)
+
+        # Device selection row
+        device_row = QHBoxLayout()
+        self.select_device_label = QLabel()
+        self.device_combo = QComboBox()
+        self.device_combo.currentIndexChanged.connect(self.on_device_changed)
+        device_row.addWidget(self.select_device_label)
+        device_row.addWidget(self.device_combo)
+
+        # Device guard enabled checkbox
+        self.device_guard_enabled_checkbox = QCheckBox()
+        self.device_guard_enabled_checkbox.stateChanged.connect(self.on_device_guard_enabled_changed)
 
         self.current_level_label = QLabel()
         self.current_level_label.setObjectName("SectionTitle")
@@ -98,7 +116,9 @@ class MicrophoneGuardPage(QWidget):
         action_row.addWidget(self.enable_guard_button)
         action_row.addWidget(self.restore_button)
 
-        level_layout.addWidget(self.default_label)
+        level_layout.addLayout(guard_mode_row)
+        level_layout.addLayout(device_row)
+        level_layout.addWidget(self.device_guard_enabled_checkbox)
         level_layout.addWidget(self.current_level_label)
         level_layout.addWidget(self.target_level_label)
         level_layout.addWidget(self.target_slider)
@@ -160,6 +180,30 @@ class MicrophoneGuardPage(QWidget):
         self.toast_label.raise_()
         self.toast_timer.start(2200)
 
+    def on_guard_mode_changed(self, index: int) -> None:
+        mode = self.guard_mode_combo.itemData(index)
+        if mode:
+            self.controller.set_guard_mode(mode)
+            mode_text = self.guard_mode_combo.itemText(index)
+            self.show_toast(t("microphone_guard.toast_guard_mode_changed", mode=mode_text))
+            self.refresh()
+
+    def on_device_changed(self, index: int) -> None:
+        device_id = self.device_combo.itemData(index)
+        if device_id:
+            self.controller.select_device(device_id)
+            self.refresh()
+
+    def on_device_guard_enabled_changed(self, state: int) -> None:
+        device_id = self.device_combo.currentData()
+        if device_id:
+            enabled = self.device_guard_enabled_checkbox.isChecked()
+            self.controller.set_device_guard_enabled(device_id, enabled)
+            if enabled:
+                self.show_toast(t("microphone_guard.toast_guard_enabled"))
+            else:
+                self.show_toast(t("microphone_guard.toast_guard_disabled"))
+
     def on_target_edit_started(self) -> None:
         self._editing_target = True
         self._pending_target_value = self.target_slider.value()
@@ -176,24 +220,22 @@ class MicrophoneGuardPage(QWidget):
         if value is None:
             value = self.target_slider.value()
 
-        self.controller.set_target_level("default-capture", value)
+        device_id = self.device_combo.currentData() or "default-capture"
+        self.controller.set_target_level(device_id, value)
         self.show_toast(t("microphone_guard.toast_target_saved", level=value))
 
     def on_auto_restore_changed(self, state: int) -> None:
         enabled = self.auto_restore_checkbox.isChecked()
-        self.controller.set_auto_restore("default-capture", enabled)
+        device_id = self.device_combo.currentData() or "default-capture"
+        self.controller.set_auto_restore(device_id, enabled)
         if enabled:
             self.show_toast(t("microphone_guard.toast_auto_restore_enabled"))
         else:
             self.show_toast(t("microphone_guard.toast_auto_restore_disabled"))
 
     def on_guard_toggle(self) -> None:
-        device = self.context.microphone_guard_service.get_device("default-capture")
-        if device is None:
-            self.show_toast(t("microphone_guard.toast_no_mic"))
-            return
-
-        if device.guard_enabled:
+        is_active = self.context.microphone_guard_service._guard_enabled
+        if is_active:
             self.controller.disable_guard("default-capture")
             self.show_toast(t("microphone_guard.toast_guard_disabled"))
         else:
@@ -201,13 +243,14 @@ class MicrophoneGuardPage(QWidget):
             self.show_toast(t("microphone_guard.toast_guard_enabled"))
 
     def on_restore_target(self) -> None:
-        device = self.context.microphone_guard_service.get_device("default-capture")
+        device_id = self.device_combo.currentData() or "default-capture"
+        device = self.context.microphone_guard_service.get_device(device_id)
         if device is None:
             self.show_toast(t("microphone_guard.toast_no_mic"))
             return
 
         success = self.context.microphone_guard_service.set_current_level(
-            "default-capture",
+            device_id,
             device.target_level,
         )
         self.context.microphone_guard_service.refresh_selected_device_state()
@@ -222,24 +265,34 @@ class MicrophoneGuardPage(QWidget):
         result = self.context.microphone_guard_service.refresh_and_enforce_selected()
         self.context.notify_state_changed()
 
-        if (
-            result.restored
-            and result.previous_level is not None
-            and result.target_level is not None
-            and result.previous_level != result.target_level
-        ):
-            message = t(
-                "microphone_guard.toast_volume_corrected",
-                previous=result.previous_level,
-                target=result.target_level,
-            )
+        if result.restored:
+            if hasattr(result, "corrected_devices") and result.corrected_devices:
+                if len(result.corrected_devices) > 1:
+                    details = "\n".join([
+                        f"• {d['name']}: {d['previous']}% → {d['target']}%" 
+                        for d in result.corrected_devices
+                    ])
+                    message = t("microphone_guard.toast_multiple_corrected", details=details)
+                else:
+                    d = result.corrected_devices[0]
+                    message = t(
+                        "microphone_guard.toast_volume_corrected",
+                        previous=d["previous"],
+                        target=d["target"],
+                    )
+            else:
+                message = t(
+                    "microphone_guard.toast_volume_corrected",
+                    previous=result.previous_level,
+                    target=result.target_level,
+                )
+            
             self.show_toast(message)
             self.context.notification_requested.emit(
                 t("microphone_guard.notification_title"), message
             )
 
     def refresh(self) -> None:
-        # Check and update timer interval dynamically if modified in Settings
         current_interval = self.context.settings_service.get_guard_interval()
         if self.timer.interval() != current_interval:
             self.timer.setInterval(current_interval)
@@ -247,23 +300,76 @@ class MicrophoneGuardPage(QWidget):
         self.title_label.setText(t("microphone_guard.page_title"))
         self.subtitle_label.setText(t("microphone_guard.page_subtitle"))
 
-        device = self.context.microphone_guard_service.get_device("default-capture")
+        # 1. Update Guard Mode combobox
+        self.guard_mode_label.setText(t("microphone_guard.guard_mode_label"))
+        self.guard_mode_combo.blockSignals(True)
+        self.guard_mode_combo.clear()
+        self.guard_mode_combo.addItem(t("microphone_guard.guard_mode_selected"), "selected")
+        self.guard_mode_combo.addItem(t("microphone_guard.guard_mode_all"), "all")
+        self.guard_mode_combo.addItem(t("microphone_guard.guard_mode_specific"), "specific")
+        
+        current_mode = self.context.microphone_guard_service.get_guard_mode()
+        for idx in range(self.guard_mode_combo.count()):
+            if self.guard_mode_combo.itemData(idx) == current_mode:
+                self.guard_mode_combo.setCurrentIndex(idx)
+                break
+        self.guard_mode_combo.blockSignals(False)
+
+        # 2. Update Microphone Selection combobox
+        self.select_device_label.setText(t("microphone_guard.select_device_label"))
+        devices = self.context.microphone_guard_service.list_devices()
+        selected_id = self.context.microphone_guard_service.get_selected_device_id()
+        
+        self.device_combo.blockSignals(True)
+        self.device_combo.clear()
+        for d in devices:
+            display = f"{d.display_name} (Default)" if d.is_default else d.display_name
+            self.device_combo.addItem(display, d.device_id)
+            
+        selected_idx = 0
+        for idx in range(self.device_combo.count()):
+            if self.device_combo.itemData(idx) == selected_id:
+                selected_idx = idx
+                break
+        self.device_combo.setCurrentIndex(selected_idx)
+        self.device_combo.blockSignals(False)
+
+        selected_device_id = self.device_combo.itemData(selected_idx)
+        device = self.context.microphone_guard_service.get_device(selected_device_id)
+
         if device is None:
             self.status_value.setText(t("microphone_guard.status_title_unavailable"))
             self.status_value.setProperty("role", "danger")
             self.status_hint.setText(t("microphone_guard.status_desc_unavailable"))
-            self.default_label.setText(t("microphone_guard.device_label_unavailable"))
+            self.device_guard_enabled_checkbox.setEnabled(False)
             self.restore_button.setEnabled(False)
             self.auto_restore_checkbox.setEnabled(False)
+            self.target_slider.setEnabled(False)
             return
 
+        self.device_guard_enabled_checkbox.setEnabled(True)
         self.restore_button.setEnabled(True)
         self.auto_restore_checkbox.setEnabled(True)
+        self.target_slider.setEnabled(True)
 
-        if device.guard_enabled:
+        global_enabled = self.context.microphone_guard_service._guard_enabled
+        if global_enabled:
             self.status_value.setText(t("microphone_guard.status_title_active"))
             self.status_value.setProperty("role", "success")
-            self.status_hint.setText(t("microphone_guard.status_desc_active"))
+            
+            if current_mode == "selected":
+                self.status_hint.setText(t("microphone_guard.status_desc_active"))
+            elif current_mode == "all":
+                self.status_hint.setText(
+                    t("microphone_guard.status_desc_active") + " (" + t("microphone_guard.guard_mode_all") + ")"
+                )
+            else:
+                guarded_names = [d.display_name for d in devices if d.guard_enabled]
+                names_str = ", ".join(guarded_names) if guarded_names else "None"
+                self.status_hint.setText(
+                    t("microphone_guard.status_desc_active") + f" (Specific: {names_str})"
+                )
+                
             self.enable_guard_button.setText(t("microphone_guard.button_disable"))
         else:
             self.status_value.setText(t("microphone_guard.status_title_inactive"))
@@ -271,7 +377,14 @@ class MicrophoneGuardPage(QWidget):
             self.status_hint.setText(t("microphone_guard.status_desc_inactive"))
             self.enable_guard_button.setText(t("microphone_guard.button_enable"))
 
-        self.default_label.setText(t("microphone_guard.device_label", name=device.display_name))
+        self.device_guard_enabled_checkbox.blockSignals(True)
+        self.device_guard_enabled_checkbox.setChecked(device.guard_enabled)
+        self.device_guard_enabled_checkbox.setText(t("microphone_guard.device_guard_enabled_checkbox"))
+        self.device_guard_enabled_checkbox.blockSignals(False)
+
+        # Show device-specific checkbox only in 'specific' mode
+        self.device_guard_enabled_checkbox.setVisible(current_mode == "specific")
+
         self.current_level_label.setText(
             t("microphone_guard.current_volume", level=device.current_level)
         )

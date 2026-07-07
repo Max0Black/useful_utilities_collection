@@ -93,6 +93,14 @@
     "toast_restored": "Target volume restored to {level}%.",
     "toast_restore_failed": "Could not restore microphone volume.",
     "toast_volume_corrected": "Microphone volume was restored from {previous}% to {target}%.",
+    "toast_multiple_corrected": "Microphone volumes restored:\n{details}",
+    "guard_mode_label": "Guard Mode:",
+    "guard_mode_selected": "Only selected microphone",
+    "guard_mode_all": "All active microphones",
+    "guard_mode_specific": "Only specific microphones",
+    "select_device_label": "Microphone to configure:",
+    "device_guard_enabled_checkbox": "Enable Guard for this device",
+    "toast_guard_mode_changed": "Guard mode changed to: {mode}.",
     "notification_title": "Microphone Guard"
   },
   "settings": {

@@ -49,3 +49,11 @@ class MicrophoneGuardController:
             return
         self.context.microphone_guard_service.set_target_level(device_id, device.current_level)
         self.context.notify_state_changed()
+
+    def set_device_guard_enabled(self, device_id: str, enabled: bool) -> None:
+        self.context.microphone_guard_service.set_device_guard_enabled(device_id, enabled)
+        self.context.notify_state_changed()
+
+    def set_guard_mode(self, mode: str) -> None:
+        self.context.microphone_guard_service.set_guard_mode(mode)
+        self.context.notify_state_changed()

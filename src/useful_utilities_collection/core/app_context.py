@@ -22,6 +22,7 @@ class AppContext(QObject):
         
         self.input_lock_service = InputLockService(self.settings_service)
         self.microphone_guard_service = MicrophoneGuardService()
+        self.state.microphone_guard_active = self.microphone_guard_service._guard_enabled
 
     def notify_state_changed(self) -> None:
         self.state_changed.emit()
