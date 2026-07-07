@@ -35,6 +35,32 @@ def main() -> None:
         print(f"[Error] Dependency installation failed: {e}")
         sys.exit(1)
 
+    print_step("Running test suite...")
+    tests_passed = True
+    try:
+        # Run python -m unittest discover tests
+        # We use subprocess.run with check=False to inspect the return code
+        result = subprocess.run([str(venv_python), "-m", "unittest", "discover", "tests"])
+        if result.returncode != 0:
+            tests_passed = False
+    except Exception as e:
+        print(f"[Error] Failed to execute test suite: {e}")
+        tests_passed = False
+
+    if not tests_passed:
+        print("\n[Warning] One or more tests failed or crashed!")
+        try:
+            choice = input("Do you still want to build the executable? (y/N): ").strip().lower()
+            if choice not in ("y", "yes"):
+                print("[Info] Build aborted by user due to test failures.")
+                sys.exit(1)
+            print("[Info] Proceeding with build despite test failures...")
+        except (EOFError, KeyboardInterrupt):
+            print("\n[Info] Input interrupted. Build aborted due to test failures.")
+            sys.exit(1)
+    else:
+        print("[Info] All tests passed successfully!")
+
     print_step("Cleaning old build files...")
     build_dir = root_dir / "build"
     dist_dir = root_dir / "dist"
