@@ -34,6 +34,5 @@ class KeyboardLockService:
         self._locked = False
         return True
 
-    @property
     def is_locked(self) -> bool:
         return self._locked
