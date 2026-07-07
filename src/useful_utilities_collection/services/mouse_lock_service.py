@@ -34,7 +34,8 @@ class MouseLockService:
     WM_MOUSEHWHEEL = 0x020E
     WM_MOUSEMOVE = 0x0200
 
-    def __init__(self):
+    def __init__(self, settings_service=None):
+        self._settings_service = settings_service
         self._locked = False
         self._listener = None
         self._hotkey_handle = None
@@ -112,10 +113,53 @@ class MouseLockService:
         except Exception:
             pass
 
+    def _convert_portable_hotkey_to_keyboard(self, portable_hotkey: str) -> str:
+        if not portable_hotkey:
+            return self.EMERGENCY_HOTKEY
+        
+        first_part = portable_hotkey.split(",")[0].strip()
+        
+        key_map = {
+            "ctrl": "ctrl",
+            "alt": "alt",
+            "shift": "shift",
+            "meta": "win",
+            "ins": "insert",
+            "del": "delete",
+            "pgup": "page up",
+            "pgdn": "page down",
+            "backspace": "backspace",
+            "esc": "esc",
+            "enter": "enter",
+            "return": "enter",
+            "tab": "tab",
+            "space": "space",
+            "up": "up",
+            "down": "down",
+            "left": "left",
+            "right": "right",
+        }
+        
+        parts = first_part.split("+")
+        new_parts = []
+        for part in parts:
+            p = part.strip().lower()
+            if p in key_map:
+                new_parts.append(key_map[p])
+            else:
+                new_parts.append(p)
+                
+        return "+".join(new_parts)
+
     def _register_hotkey(self) -> None:
         try:
+            hotkey_str = self.EMERGENCY_HOTKEY
+            if self._settings_service:
+                portable_hotkey = self._settings_service.get_mouse_lock_hotkey()
+                hotkey_str = self._convert_portable_hotkey_to_keyboard(portable_hotkey)
+            
             self._hotkey_handle = keyboard.add_hotkey(
-                self.EMERGENCY_HOTKEY,
+                hotkey_str,
                 self.request_emergency_unlock,
                 suppress=False,
                 trigger_on_release=False,

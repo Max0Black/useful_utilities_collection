@@ -34,10 +34,12 @@ def run() -> int:
     app_icon = QIcon(str(icon_path))
 
     app.setWindowIcon(app_icon)
+    app.setQuitOnLastWindowClosed(False)
 
     context = AppContext()
-    window = MainWindow(context)
+    window = MainWindow(context, app_icon)
     window.setWindowIcon(app_icon)
-    window.show()
+    if "--minimized" not in sys.argv:
+        window.show()
 
     return app.exec()

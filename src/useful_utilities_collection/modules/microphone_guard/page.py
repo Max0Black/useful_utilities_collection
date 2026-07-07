@@ -10,7 +10,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from useful_utilities_collection.modules.microphone_guard.controller import MicrophoneGuardController
+from useful_utilities_collection.core.translation import t
+from useful_utilities_collection.modules.microphone_guard.controller import (
+    MicrophoneGuardController,
+)
 
 
 class MicrophoneGuardPage(QWidget):
@@ -26,13 +29,11 @@ class MicrophoneGuardPage(QWidget):
         layout.setContentsMargins(28, 28, 28, 28)
         layout.setSpacing(16)
 
-        title = QLabel("Microphone Guard")
-        title.setObjectName("PageTitle")
+        self.title_label = QLabel()
+        self.title_label.setObjectName("PageTitle")
 
-        subtitle = QLabel(
-            "Protect the Windows microphone volume of the default recording device."
-        )
-        subtitle.setObjectName("MutedText")
+        self.subtitle_label = QLabel()
+        self.subtitle_label.setObjectName("MutedText")
 
         self.toast_label = QLabel("", self)
         self.toast_label.hide()
@@ -81,17 +82,17 @@ class MicrophoneGuardPage(QWidget):
         self.target_slider.sliderMoved.connect(self.on_target_preview_changed)
         self.target_slider.sliderReleased.connect(self.on_target_committed)
 
-        self.auto_restore_checkbox = QCheckBox("Restore automatically when volume changes")
+        self.auto_restore_checkbox = QCheckBox()
         self.auto_restore_checkbox.stateChanged.connect(self.on_auto_restore_changed)
 
         action_row = QHBoxLayout()
         action_row.setSpacing(12)
 
-        self.enable_guard_button = QPushButton("Enable Guard")
+        self.enable_guard_button = QPushButton()
         self.enable_guard_button.setObjectName("PrimaryButton")
         self.enable_guard_button.clicked.connect(self.on_guard_toggle)
 
-        self.restore_button = QPushButton("Restore target volume now")
+        self.restore_button = QPushButton()
         self.restore_button.clicked.connect(self.on_restore_target)
 
         action_row.addWidget(self.enable_guard_button)
@@ -110,8 +111,8 @@ class MicrophoneGuardPage(QWidget):
         guard_layout.setContentsMargins(18, 18, 18, 18)
         guard_layout.setSpacing(8)
 
-        guard_title = QLabel("Guard Activity")
-        guard_title.setObjectName("SectionTitle")
+        self.guard_title = QLabel()
+        self.guard_title.setObjectName("SectionTitle")
 
         self.guard_info = QLabel()
         self.guard_info.setObjectName("MutedText")
@@ -121,12 +122,12 @@ class MicrophoneGuardPage(QWidget):
         self.last_correction_label.setObjectName("CardValue")
         self.last_correction_label.setProperty("role", "accent")
 
-        guard_layout.addWidget(guard_title)
+        guard_layout.addWidget(self.guard_title)
         guard_layout.addWidget(self.guard_info)
         guard_layout.addWidget(self.last_correction_label)
 
-        layout.addWidget(title)
-        layout.addWidget(subtitle)
+        layout.addWidget(self.title_label)
+        layout.addWidget(self.subtitle_label)
         layout.addWidget(self.status_panel)
         layout.addWidget(self.level_panel)
         layout.addWidget(self.guard_panel)
@@ -134,7 +135,7 @@ class MicrophoneGuardPage(QWidget):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.on_timer_tick)
-        self.timer.start(1500)
+        self.timer.start(self.context.settings_service.get_guard_interval())
 
         self.context.state_changed.connect(self.refresh)
         self.controller.refresh_devices()
@@ -165,7 +166,7 @@ class MicrophoneGuardPage(QWidget):
 
     def on_target_preview_changed(self, value: int) -> None:
         self._pending_target_value = value
-        self.target_level_label.setText(f"Protected target volume: {value}%")
+        self.target_level_label.setText(t("microphone_guard.target_volume", level=value))
 
     def on_target_committed(self) -> None:
         value = self._pending_target_value
@@ -176,33 +177,33 @@ class MicrophoneGuardPage(QWidget):
             value = self.target_slider.value()
 
         self.controller.set_target_level("default-capture", value)
-        self.show_toast(f"Target volume saved: {value}%.")
+        self.show_toast(t("microphone_guard.toast_target_saved", level=value))
 
     def on_auto_restore_changed(self, state: int) -> None:
-        enabled = state == Qt.Checked
+        enabled = self.auto_restore_checkbox.isChecked()
         self.controller.set_auto_restore("default-capture", enabled)
         if enabled:
-            self.show_toast("Automatic restore enabled.")
+            self.show_toast(t("microphone_guard.toast_auto_restore_enabled"))
         else:
-            self.show_toast("Automatic restore disabled.")
+            self.show_toast(t("microphone_guard.toast_auto_restore_disabled"))
 
     def on_guard_toggle(self) -> None:
         device = self.context.microphone_guard_service.get_device("default-capture")
         if device is None:
-            self.show_toast("No microphone available.")
+            self.show_toast(t("microphone_guard.toast_no_mic"))
             return
 
         if device.guard_enabled:
             self.controller.disable_guard("default-capture")
-            self.show_toast("Guard disabled.")
+            self.show_toast(t("microphone_guard.toast_guard_disabled"))
         else:
             self.controller.enable_guard("default-capture")
-            self.show_toast("Guard enabled.")
+            self.show_toast(t("microphone_guard.toast_guard_enabled"))
 
     def on_restore_target(self) -> None:
         device = self.context.microphone_guard_service.get_device("default-capture")
         if device is None:
-            self.show_toast("No microphone available.")
+            self.show_toast(t("microphone_guard.toast_no_mic"))
             return
 
         success = self.context.microphone_guard_service.set_current_level(
@@ -213,9 +214,9 @@ class MicrophoneGuardPage(QWidget):
         self.context.notify_state_changed()
 
         if success:
-            self.show_toast(f"Target volume restored to {device.target_level}%.")
+            self.show_toast(t("microphone_guard.toast_restored", level=device.target_level))
         else:
-            self.show_toast("Could not restore microphone volume.")
+            self.show_toast(t("microphone_guard.toast_restore_failed"))
 
     def on_timer_tick(self) -> None:
         result = self.context.microphone_guard_service.refresh_and_enforce_selected()
@@ -227,17 +228,31 @@ class MicrophoneGuardPage(QWidget):
             and result.target_level is not None
             and result.previous_level != result.target_level
         ):
-            self.show_toast(
-                f"Microphone volume was restored from {result.previous_level}% to {result.target_level}%."
+            message = t(
+                "microphone_guard.toast_volume_corrected",
+                previous=result.previous_level,
+                target=result.target_level,
+            )
+            self.show_toast(message)
+            self.context.notification_requested.emit(
+                t("microphone_guard.notification_title"), message
             )
 
     def refresh(self) -> None:
+        # Check and update timer interval dynamically if modified in Settings
+        current_interval = self.context.settings_service.get_guard_interval()
+        if self.timer.interval() != current_interval:
+            self.timer.setInterval(current_interval)
+
+        self.title_label.setText(t("microphone_guard.page_title"))
+        self.subtitle_label.setText(t("microphone_guard.page_subtitle"))
+
         device = self.context.microphone_guard_service.get_device("default-capture")
         if device is None:
-            self.status_value.setText("Microphone unavailable")
+            self.status_value.setText(t("microphone_guard.status_title_unavailable"))
             self.status_value.setProperty("role", "danger")
-            self.status_hint.setText("The default Windows recording device could not be accessed.")
-            self.default_label.setText("Default device: unavailable")
+            self.status_hint.setText(t("microphone_guard.status_desc_unavailable"))
+            self.default_label.setText(t("microphone_guard.device_label_unavailable"))
             self.restore_button.setEnabled(False)
             self.auto_restore_checkbox.setEnabled(False)
             return
@@ -246,21 +261,27 @@ class MicrophoneGuardPage(QWidget):
         self.auto_restore_checkbox.setEnabled(True)
 
         if device.guard_enabled:
-            self.status_value.setText("Guard active")
+            self.status_value.setText(t("microphone_guard.status_title_active"))
             self.status_value.setProperty("role", "success")
-            self.status_hint.setText("The app keeps the Windows microphone volume at the protected target.")
-            self.enable_guard_button.setText("Disable Guard")
+            self.status_hint.setText(t("microphone_guard.status_desc_active"))
+            self.enable_guard_button.setText(t("microphone_guard.button_disable"))
         else:
-            self.status_value.setText("Guard inactive")
+            self.status_value.setText(t("microphone_guard.status_title_inactive"))
             self.status_value.setProperty("role", "neutral")
-            self.status_hint.setText("The target is stored, but the app is not correcting microphone volume yet.")
-            self.enable_guard_button.setText("Enable Guard")
+            self.status_hint.setText(t("microphone_guard.status_desc_inactive"))
+            self.enable_guard_button.setText(t("microphone_guard.button_enable"))
 
-        self.default_label.setText(f"Default device: {device.display_name}")
-        self.current_level_label.setText(f"Current microphone volume: {device.current_level}%")
+        self.default_label.setText(t("microphone_guard.device_label", name=device.display_name))
+        self.current_level_label.setText(
+            t("microphone_guard.current_volume", level=device.current_level)
+        )
 
-        shown_target = self._pending_target_value if self._editing_target and self._pending_target_value is not None else device.target_level
-        self.target_level_label.setText(f"Protected target volume: {shown_target}%")
+        shown_target = (
+            self._pending_target_value
+            if self._editing_target and self._pending_target_value is not None
+            else device.target_level
+        )
+        self.target_level_label.setText(t("microphone_guard.target_volume", level=shown_target))
 
         if not self._editing_target:
             self.target_slider.blockSignals(True)
@@ -269,13 +290,18 @@ class MicrophoneGuardPage(QWidget):
 
         self.auto_restore_checkbox.blockSignals(True)
         self.auto_restore_checkbox.setChecked(device.auto_restore)
+        self.auto_restore_checkbox.setText(t("microphone_guard.auto_restore_checkbox"))
         self.auto_restore_checkbox.blockSignals(False)
 
-        self.guard_info.setText(
-            "The guard watches the Windows microphone volume and restores it when another app changes it."
-        )
+        self.restore_button.setText(t("microphone_guard.button_restore"))
+
+        self.guard_title.setText(t("microphone_guard.activity_title"))
+        self.guard_info.setText(t("microphone_guard.activity_desc"))
         self.last_correction_label.setText(
-            f"Last correction: {self.context.microphone_guard_service.get_last_correction_text()}"
+            t(
+                "microphone_guard.last_correction",
+                time=self.context.microphone_guard_service.get_last_correction_text(),
+            )
         )
 
         self.style().unpolish(self.status_value)

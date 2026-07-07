@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from useful_utilities_collection.core.translation import t
 from useful_utilities_collection.modules.input_lock.controller import InputLockController
 
 
@@ -21,14 +22,12 @@ class InputLockPage(QWidget):
         root.setContentsMargins(28, 28, 28, 28)
         root.setSpacing(16)
 
-        title = QLabel("Input Lock")
-        title.setObjectName("PageTitle")
+        self.title_label = QLabel()
+        self.title_label.setObjectName("PageTitle")
 
-        subtitle = QLabel(
-            "Lock either the keyboard or the mouse. Only one lock can be active at a time."
-        )
-        subtitle.setObjectName("MutedText")
-        subtitle.setWordWrap(True)
+        self.subtitle_label = QLabel()
+        self.subtitle_label.setObjectName("MutedText")
+        self.subtitle_label.setWordWrap(True)
 
         self.toast_label = QLabel("", self)
         self.toast_label.setObjectName("ToastMessage")
@@ -44,17 +43,17 @@ class InputLockPage(QWidget):
         overview_layout.setContentsMargins(18, 18, 18, 18)
         overview_layout.setSpacing(8)
 
-        overview_title = QLabel("Status")
-        overview_title.setObjectName("SectionTitle")
+        self.overview_title = QLabel()
+        self.overview_title.setObjectName("SectionTitle")
 
-        self.overview_status = QLabel("Unlocked")
+        self.overview_status = QLabel()
         self.overview_status.setObjectName("CardValue")
 
-        self.overview_hint = QLabel("No input lock is currently active.")
+        self.overview_hint = QLabel()
         self.overview_hint.setObjectName("MutedText")
         self.overview_hint.setWordWrap(True)
 
-        overview_layout.addWidget(overview_title)
+        overview_layout.addWidget(self.overview_title)
         overview_layout.addWidget(self.overview_status)
         overview_layout.addWidget(self.overview_hint)
 
@@ -63,23 +62,21 @@ class InputLockPage(QWidget):
         keyboard_layout.setContentsMargins(18, 18, 18, 18)
         keyboard_layout.setSpacing(10)
 
-        keyboard_title = QLabel("Keyboard")
-        keyboard_title.setObjectName("SectionTitle")
+        self.keyboard_title = QLabel()
+        self.keyboard_title.setObjectName("SectionTitle")
 
-        self.keyboard_status = QLabel("Unlocked")
+        self.keyboard_status = QLabel()
         self.keyboard_status.setObjectName("CardValue")
 
-        self.keyboard_hint = QLabel(
-            "Use this when you want to prevent keyboard input temporarily."
-        )
+        self.keyboard_hint = QLabel()
         self.keyboard_hint.setObjectName("MutedText")
         self.keyboard_hint.setWordWrap(True)
 
-        self.keyboard_button = QPushButton("Lock keyboard")
+        self.keyboard_button = QPushButton()
         self.keyboard_button.setObjectName("PrimaryButton")
         self.keyboard_button.clicked.connect(self.on_toggle_keyboard)
 
-        keyboard_layout.addWidget(keyboard_title)
+        keyboard_layout.addWidget(self.keyboard_title)
         keyboard_layout.addWidget(self.keyboard_status)
         keyboard_layout.addWidget(self.keyboard_hint)
         keyboard_layout.addWidget(self.keyboard_button)
@@ -89,24 +86,21 @@ class InputLockPage(QWidget):
         mouse_layout.setContentsMargins(18, 18, 18, 18)
         mouse_layout.setSpacing(10)
 
-        mouse_title = QLabel("Mouse")
-        mouse_title.setObjectName("SectionTitle")
+        self.mouse_title = QLabel()
+        self.mouse_title.setObjectName("SectionTitle")
 
-        self.mouse_status = QLabel("Unlocked")
+        self.mouse_status = QLabel()
         self.mouse_status.setObjectName("CardValue")
 
-        self.mouse_hint = QLabel(
-            "Use this when you want to prevent mouse movement or clicks. "
-            "Emergency unlock remains available via keyboard shortcut."
-        )
+        self.mouse_hint = QLabel()
         self.mouse_hint.setObjectName("MutedText")
         self.mouse_hint.setWordWrap(True)
 
-        self.mouse_button = QPushButton("Lock mouse")
+        self.mouse_button = QPushButton()
         self.mouse_button.setObjectName("PrimaryButton")
         self.mouse_button.clicked.connect(self.on_toggle_mouse)
 
-        mouse_layout.addWidget(mouse_title)
+        mouse_layout.addWidget(self.mouse_title)
         mouse_layout.addWidget(self.mouse_status)
         mouse_layout.addWidget(self.mouse_hint)
         mouse_layout.addWidget(self.mouse_button)
@@ -117,8 +111,8 @@ class InputLockPage(QWidget):
         panels.addWidget(self.keyboard_panel, 0, 0)
         panels.addWidget(self.mouse_panel, 0, 1)
 
-        root.addWidget(title)
-        root.addWidget(subtitle)
+        root.addWidget(self.title_label)
+        root.addWidget(self.subtitle_label)
         root.addWidget(self.toast_label)
         root.addWidget(self.overview_panel)
         root.addLayout(panels)
@@ -129,6 +123,7 @@ class InputLockPage(QWidget):
         self.mouse_enforce_timer.start(50)
 
         self.context.input_lock_service.state.changed.connect(self.refresh)
+        self.context.state_changed.connect(self.refresh)
         self.refresh()
 
     def _create_panel(self) -> QFrame:
@@ -147,7 +142,7 @@ class InputLockPage(QWidget):
         mouse_service = self.context.input_lock_service.mouse_lock_service
         if mouse_service.consume_emergency_unlock_request():
             self.controller.unlock_all()
-            self.show_toast("Emergency unlock triggered.")
+            self.show_toast(t("input_lock.toast_emergency_unlock"))
 
     def on_toggle_keyboard(self) -> None:
         service = self.context.input_lock_service
@@ -157,12 +152,12 @@ class InputLockPage(QWidget):
         self.controller.toggle_keyboard_lock()
 
         if was_locked:
-            self.show_toast("Keyboard lock disabled.")
+            self.show_toast(t("input_lock.toast_keyboard_disabled"))
         else:
             if mouse_was_locked:
-                self.show_toast("Mouse unlocked. Keyboard lock enabled.")
+                self.show_toast(t("input_lock.toast_mouse_unlocked_keyboard_enabled"))
             else:
-                self.show_toast("Keyboard lock enabled.")
+                self.show_toast(t("input_lock.toast_keyboard_enabled"))
 
     def on_toggle_mouse(self) -> None:
         service = self.context.input_lock_service
@@ -172,41 +167,68 @@ class InputLockPage(QWidget):
         self.controller.toggle_mouse_lock()
 
         if was_locked:
-            self.show_toast("Mouse lock disabled.")
+            self.show_toast(t("input_lock.toast_mouse_disabled"))
         else:
             if keyboard_was_locked:
-                self.show_toast("Keyboard unlocked. Mouse lock enabled.")
+                self.show_toast(t("input_lock.toast_keyboard_unlocked_mouse_enabled"))
             else:
-                self.show_toast("Mouse lock enabled.")
+                self.show_toast(t("input_lock.toast_mouse_enabled"))
 
     def refresh(self) -> None:
+        self.title_label.setText(t("input_lock.page_title"))
+        self.subtitle_label.setText(t("input_lock.page_subtitle"))
+
+        self.overview_title.setText(t("input_lock.status_title"))
+        self.keyboard_title.setText(t("input_lock.keyboard_title"))
+        self.keyboard_hint.setText(t("input_lock.keyboard_hint"))
+        self.mouse_title.setText(t("input_lock.mouse_title"))
+
+        settings = self.context.settings_service
+        shortcut_text = settings.get_mouse_lock_hotkey() if settings else "Shift+Alt+M"
+
+        self.mouse_hint.setText(t("input_lock.mouse_hint", shortcut=shortcut_text))
+
         state = self.context.input_lock_service.state
         keyboard_locked = state.keyboard_locked()
         mouse_locked = state.mouse_locked()
 
-        self.keyboard_status.setText("Locked" if keyboard_locked else "Unlocked")
+        self.keyboard_status.setText(
+            t("input_lock.status_keyboard_locked")
+            if keyboard_locked
+            else t("input_lock.status_unlocked")
+        )
         self.keyboard_status.setProperty("role", "danger" if keyboard_locked else "success")
 
-        self.mouse_status.setText("Locked" if mouse_locked else "Unlocked")
+        self.mouse_status.setText(
+            t("input_lock.status_mouse_locked")
+            if mouse_locked
+            else t("input_lock.status_unlocked")
+        )
         self.mouse_status.setProperty("role", "danger" if mouse_locked else "success")
 
-        self.keyboard_button.setText("Unlock keyboard" if keyboard_locked else "Lock keyboard")
-        self.mouse_button.setText("Unlock mouse" if mouse_locked else "Lock mouse")
+        self.keyboard_button.setText(
+            t("input_lock.keyboard_button_unlock")
+            if keyboard_locked
+            else t("input_lock.keyboard_button_lock")
+        )
+        self.mouse_button.setText(
+            t("input_lock.mouse_button_unlock")
+            if mouse_locked
+            else t("input_lock.mouse_button_lock")
+        )
 
         if keyboard_locked:
-            self.overview_status.setText("Keyboard locked")
+            self.overview_status.setText(t("input_lock.status_keyboard_locked"))
             self.overview_status.setProperty("role", "danger")
-            self.overview_hint.setText("Keyboard input is currently blocked.")
+            self.overview_hint.setText(t("input_lock.status_hint_keyboard"))
         elif mouse_locked:
-            self.overview_status.setText("Mouse locked")
+            self.overview_status.setText(t("input_lock.status_mouse_locked"))
             self.overview_status.setProperty("role", "danger")
-            self.overview_hint.setText(
-                "Mouse input is currently blocked. Use Shift + Alt + M if needed."
-            )
+            self.overview_hint.setText(t("input_lock.status_hint_mouse", shortcut=shortcut_text))
         else:
-            self.overview_status.setText("Unlocked")
+            self.overview_status.setText(t("input_lock.status_unlocked"))
             self.overview_status.setProperty("role", "success")
-            self.overview_hint.setText("No input lock is currently active.")
+            self.overview_hint.setText(t("input_lock.status_hint_unlocked"))
 
         self._repolish_status_widgets()
 
@@ -221,5 +243,5 @@ class InputLockPage(QWidget):
             self.style().unpolish(widget)
             self.style().polish(widget)
             widget.update()
-            
+
         self.setStyleSheet(self.styleSheet())

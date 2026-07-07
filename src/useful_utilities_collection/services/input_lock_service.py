@@ -4,10 +4,10 @@ from useful_utilities_collection.services.mouse_lock_service import MouseLockSer
 
 
 class InputLockService:
-    def __init__(self):
+    def __init__(self, settings_service=None):
         self.state = InputLockState()
         self.keyboard_lock_service = KeyboardLockService()
-        self.mouse_lock_service = MouseLockService()
+        self.mouse_lock_service = MouseLockService(settings_service)
         self._sync_state()
 
     def lock_keyboard(self) -> bool:
