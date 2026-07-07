@@ -78,7 +78,7 @@ python -m useful_utilities_collection.main
 
 ## 📦 Simple Deployment (Create standalone `.exe`)
 
-We have simplified the compilation process down to a single command. The included build script checks requirements, updates dependencies, and bundles all resources (icons, language packs, com-hooks) into a single standalone executable.
+I have simplified the compilation process down to a single command. The included build script checks requirements, updates dependencies, and bundles all resources (icons, language packs, com-hooks) into a single standalone executable.
 
 Run the build script:
 ```powershell
