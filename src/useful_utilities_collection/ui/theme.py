@@ -20,6 +20,20 @@ QStackedWidget#ContentStack {
     border-radius: 18px;
 }
 
+/* ── Scroll areas – must be fully transparent so dark theme shows ── */
+QScrollArea#MicGuardScroll {
+    background: transparent;
+    border: none;
+}
+
+QScrollArea#MicGuardScroll > QWidget > QWidget {
+    background: transparent;
+}
+
+QWidget#MicGuardInner {
+    background: transparent;
+}
+
 QWidget#Sidebar {
     background: #161b22;
     border: 1px solid #2d333b;
@@ -94,21 +108,25 @@ QLabel#CardValue {
 QLabel#CardValue[role="success"] {
     color: #2ea043;
     font-weight: 700;
+    background: transparent;
 }
 
 QLabel#CardValue[role="danger"] {
     color: #f85149;
     font-weight: 700;
+    background: transparent;
 }
 
 QLabel#CardValue[role="accent"] {
     color: #58a6ff;
     font-weight: 700;
+    background: transparent;
 }
 
 QLabel#CardValue[role="neutral"] {
     color: #e6edf3;
     font-weight: 700;
+    background: transparent;
 }
 
 /* ── Panels ────────────────────────────────────────────────── */
@@ -120,7 +138,7 @@ QFrame#Panel {
 
 /* ── Guard Mode panel – more prominent ─────────────────────── */
 QFrame#GuardModePanel {
-    background: #0f2038;
+    background: #161b22;
     border: 1px solid #1f6feb;
     border-radius: 14px;
 }
@@ -132,26 +150,90 @@ QLabel#GuardModeTitle {
     background: transparent;
 }
 
-/* ── Active microphone tags ────────────────────────────────── */
-QLabel#MicTag {
+/* ── Clickable mic tag frames ──────────────────────────────── */
+
+/* Active mic (guard ON) – green */
+QFrame#MicTagActive {
     background: #1a2a1a;
     border: 1px solid #2ea043;
     border-radius: 8px;
-    color: #2ea043;
-    font-size: 9pt;
-    font-weight: 600;
-    padding: 3px 8px;
+    padding: 2px 0px;
 }
 
-QLabel#MicTagInactive {
+QFrame#MicTagActive:hover {
+    background: #22382a;
+    border-color: #3fb950;
+}
+
+/* Active + currently selected – green with thicker border */
+QFrame#MicTagActiveSelected {
+    background: #1e3020;
+    border: 2px solid #3fb950;
+    border-radius: 8px;
+    padding: 2px 0px;
+}
+
+QFrame#MicTagActiveSelected:hover {
+    background: #254030;
+    border-color: #56d364;
+}
+
+/* Inactive but currently selected – blue outline */
+QFrame#MicTagSelected {
+    background: #1a2038;
+    border: 2px solid #58a6ff;
+    border-radius: 8px;
+    padding: 2px 0px;
+}
+
+QFrame#MicTagSelected:hover {
+    background: #202a4a;
+    border-color: #79c0ff;
+}
+
+/* Inactive, not selected */
+QFrame#MicTagInactive {
     background: #1e2028;
     border: 1px solid #3a4552;
     border-radius: 8px;
-    color: #9da7b3;
-    font-size: 9pt;
-    padding: 3px 8px;
+    padding: 2px 0px;
 }
 
+QFrame#MicTagInactive:hover {
+    background: #252b36;
+    border-color: #58a6ff;
+}
+
+QLabel#MicTagDot {
+    color: #2ea043;
+    font-size: 8pt;
+    background: transparent;
+}
+
+QLabel#MicTagIcon {
+    background: transparent;
+    font-size: 11pt;
+}
+
+QLabel#MicTagText {
+    background: transparent;
+    font-size: 9pt;
+    font-weight: 600;
+    color: inherit;
+}
+
+QFrame#MicTagActive QLabel,
+QFrame#MicTagActiveSelected QLabel {
+    color: #2ea043;
+}
+
+QFrame#MicTagSelected QLabel {
+    color: #79c0ff;
+}
+
+QFrame#MicTagInactive QLabel {
+    color: #9da7b3;
+}
 /* ── Buttons ───────────────────────────────────────────────── */
 QPushButton {
     background: #161b22;
@@ -199,6 +281,50 @@ QPushButton#DangerButton {
 
 QPushButton#DangerButton:hover {
     background: #8b2020;
+}
+
+/* ── Small action buttons (for mic panel header) ───────────── */
+QPushButton#SmallPrimaryButton {
+    background: #1f6feb;
+    border: none;
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-weight: 600;
+    font-size: 9pt;
+    color: #ffffff;
+}
+
+QPushButton#SmallPrimaryButton:hover {
+    background: #388bfd;
+}
+
+QPushButton#SmallDangerButton {
+    background: #6e1a1a;
+    border: 1px solid #f85149;
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-weight: 600;
+    font-size: 9pt;
+    color: #ffffff;
+}
+
+QPushButton#SmallDangerButton:hover {
+    background: #8b2020;
+}
+
+QPushButton#SmallSecondaryButton {
+    background: #1e2630;
+    border: 1px solid #3a4552;
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 9pt;
+    color: #9da7b3;
+}
+
+QPushButton#SmallSecondaryButton:hover {
+    background: #253040;
+    border-color: #58a6ff;
+    color: #e6edf3;
 }
 
 /* ── Form controls ─────────────────────────────────────────── */

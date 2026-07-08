@@ -41,7 +41,9 @@ class MicrophoneGuardService:
             self._settings.value("microphone_guard/guard_enabled", False)
         )
         self._guard_mode: str = self._settings.value("microphone_guard/guard_mode", "selected")
-        self._last_correction_text: str = "–"
+        self._last_correction_text: str = self._settings.value(
+            "microphone_guard/last_correction_text", "–"
+        )
         self._cached_devices: list[MicrophoneDevice] = []
         
         # Legacy fields for backward compatibility and tests
@@ -207,14 +209,21 @@ class MicrophoneGuardService:
                 d.guard_enabled = enabled
 
     def set_guard_enabled(self, device_id: str, enabled: bool) -> None:
-        self._guard_enabled = enabled
-        self._settings.setValue("microphone_guard/guard_enabled", enabled)
-        self._settings.sync()
-        
         if device_id == "default-capture":
             target = self.refresh_selected_device_state()
             device_id = target.device_id if target else "default-capture"
+
         self.set_device_guard_enabled(device_id, enabled)
+
+        devices = self._cached_devices or self.list_devices()
+        self._guard_enabled = any(bool(d.guard_enabled) for d in devices)
+
+        self._settings.setValue("microphone_guard/guard_enabled", self._guard_enabled)
+        self._settings.sync()
+    
+    def is_device_guard_enabled(self, device_id: str) -> bool:
+        device = self.get_device(device_id)
+        return bool(device.guard_enabled) if device else False
 
     def set_auto_restore(self, device_id: str, enabled: bool) -> None:
         self._auto_restore = enabled
@@ -264,6 +273,8 @@ class MicrophoneGuardService:
             changed = self._set_device_volume_level(device_id, target_level)
             if changed:
                 self._last_correction_text = datetime.now().strftime("%d.%m.%Y, %H:%M:%S")
+                self._settings.setValue("microphone_guard/last_correction_text", self._last_correction_text)
+                self._settings.sync()
                 current_level = self._get_device_volume_level(device_id) or target_level
                 device.current_level = current_level
                 return GuardRestoreResult(
@@ -332,6 +343,8 @@ class MicrophoneGuardService:
                 if changed:
                     restored_any = True
                     self._last_correction_text = datetime.now().strftime("%d.%m.%Y, %H:%M:%S")
+                    self._settings.setValue("microphone_guard/last_correction_text", self._last_correction_text)
+                    self._settings.sync()
                     dev.current_level = target_level
                     corrected_devices.append({
                         "name": dev.display_name,
