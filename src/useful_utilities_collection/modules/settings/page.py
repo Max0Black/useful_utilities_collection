@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from useful_utilities_collection.core.translation import set_language, t
+from useful_utilities_collection.core.translation import get_available_languages, set_language, t
 
 
 class SettingsPage(QWidget):
@@ -50,12 +50,11 @@ class SettingsPage(QWidget):
         self.general_title = QLabel()
         self.general_title.setObjectName("SectionTitle")
 
-        # Language row
         lang_row = QHBoxLayout()
         self.lang_label = QLabel()
         self.lang_combo = QComboBox()
-        self.lang_combo.addItem("English", "en")
-        self.lang_combo.addItem("Deutsch", "de")
+        # Dynamically populate languages from available JSON files
+        self._populate_language_combo()
         lang_row.addWidget(self.lang_label)
         lang_row.addWidget(self.lang_combo)
 
@@ -169,7 +168,40 @@ class SettingsPage(QWidget):
         self.toast_label.raise_()
         self.toast_timer.start(2200)
 
+    # Human-readable display names for language codes
+    _LANG_DISPLAY_NAMES = {
+        "en": "English",
+        "de": "Deutsch",
+        "fr": "Français",
+        "es": "Español",
+        "it": "Italiano",
+        "nl": "Nederlands",
+        "pl": "Polski",
+        "pt": "Português",
+        "ru": "Русский",
+        "tr": "Türkçe",
+        "zh": "中文",
+        "ja": "日本語",
+        "ko": "한국어",
+    }
+
+    def _populate_language_combo(self) -> None:
+        """Populate language dropdown from all available JSON language files."""
+        self.lang_combo.blockSignals(True)
+        self.lang_combo.clear()
+        available = get_available_languages()
+        # Sort: ensure 'en' and 'de' are first
+        priority = ["en", "de"]
+        sorted_langs = [l for l in priority if l in available] + [
+            l for l in sorted(available) if l not in priority
+        ]
+        for code in sorted_langs:
+            display = self._LANG_DISPLAY_NAMES.get(code, code.upper())
+            self.lang_combo.addItem(display, code)
+        self.lang_combo.blockSignals(False)
+
     def load_settings(self) -> None:
+
         # Load values into UI widgets without firing signals
         self.lang_combo.blockSignals(True)
         idx = self.lang_combo.findData(self.service.get_language())

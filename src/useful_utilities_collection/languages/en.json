@@ -8,7 +8,10 @@
     "tray_menu_show": "Show Window",
     "tray_menu_exit": "Exit",
     "confirm_exit_title": "Confirm Exit",
-    "confirm_exit_body": "Microphone Guard is active. Are you sure you want to exit?"
+    "confirm_exit_body": "Microphone Guard is active. Are you sure you want to exit?",
+    "guard_active_startup_title": "Guard is active!",
+    "guard_active_startup_body": "Your microphone volume is being kept at the target level.",
+    "instance_already_running": "UUC is already running \u2013 bringing it to the front."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -27,7 +30,7 @@
     "keyboard_unlocked_desc": "Keyboard input is currently available.",
     "mouse_locked_desc": "Mouse input is currently blocked. Emergency unlock remains available.",
     "mouse_unlocked_desc": "Mouse input is currently available.",
-    "microphone_state_active": "Active · {level}%",
+    "microphone_state_active": "Guard active · {level}%",
     "microphone_state_inactive": "Inactive · {level}%",
     "microphone_state_unavailable": "Unavailable",
     "microphone_body_active": "Protection state of the Windows default microphone volume.",

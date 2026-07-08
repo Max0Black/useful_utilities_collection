@@ -1,4 +1,12 @@
-from PySide6.QtWidgets import QFrame, QGridLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QVBoxLayout,
+    QWidget,
+)
 
 from useful_utilities_collection.core.translation import t
 
@@ -10,8 +18,9 @@ class DashboardPage(QWidget):
 
         root = QVBoxLayout(self)
         root.setContentsMargins(28, 28, 28, 28)
-        root.setSpacing(16)
+        root.setSpacing(18)
 
+        # ── Header ───────────────────────────────────────────────────
         self.title_label = QLabel()
         self.title_label.setObjectName("PageTitle")
 
@@ -19,31 +28,36 @@ class DashboardPage(QWidget):
         self.subtitle_label.setObjectName("MutedText")
         self.subtitle_label.setWordWrap(True)
 
+        # ── Status cards ─────────────────────────────────────────────
         cards = QGridLayout()
-        cards.setHorizontalSpacing(16)
-        cards.setVerticalSpacing(16)
+        cards.setHorizontalSpacing(14)
+        cards.setVerticalSpacing(14)
 
         (
             self.keyboard_card,
             self.keyboard_card_title,
+            self.keyboard_icon,
             self.keyboard_value,
             self.keyboard_body,
-        ) = self._create_card()
+        ) = self._create_card("⌨")
 
         (
             self.mouse_card,
             self.mouse_card_title,
+            self.mouse_icon,
             self.mouse_value,
             self.mouse_body,
-        ) = self._create_card()
+        ) = self._create_card("🖱")
 
         (
             self.microphone_card,
             self.microphone_card_title,
+            self.microphone_icon,
             self.microphone_value,
             self.microphone_body,
-        ) = self._create_card()
+        ) = self._create_card("🎙")
 
+        # ── Microphone Guard Details Panel ───────────────────────────
         self.guard_panel = QFrame()
         self.guard_panel.setObjectName("Panel")
 
@@ -51,8 +65,16 @@ class DashboardPage(QWidget):
         guard_layout.setContentsMargins(18, 18, 18, 18)
         guard_layout.setSpacing(10)
 
+        guard_header = QHBoxLayout()
         self.guard_title = QLabel()
         self.guard_title.setObjectName("SectionTitle")
+        guard_header.addWidget(self.guard_title)
+        guard_header.addStretch()
+
+        # Guard state badge
+        self.guard_badge = QLabel()
+        self.guard_badge.setObjectName("MutedText")
+        guard_header.addWidget(self.guard_badge)
 
         self.guard_text = QLabel("")
         self.guard_text.setObjectName("MutedText")
@@ -61,8 +83,9 @@ class DashboardPage(QWidget):
         self.guard_correction = QLabel("")
         self.guard_correction.setObjectName("CardValue")
         self.guard_correction.setProperty("role", "accent")
+        self.guard_correction.setWordWrap(True)
 
-        guard_layout.addWidget(self.guard_title)
+        guard_layout.addLayout(guard_header)
         guard_layout.addWidget(self.guard_text)
         guard_layout.addWidget(self.guard_correction)
 
@@ -80,16 +103,25 @@ class DashboardPage(QWidget):
         self.context.state_changed.connect(self.refresh)
         self.refresh()
 
-    def _create_card(self):
+    def _create_card(self, icon: str):
         card = QFrame()
         card.setObjectName("Panel")
 
         layout = QVBoxLayout(card)
         layout.setContentsMargins(18, 18, 18, 18)
-        layout.setSpacing(8)
+        layout.setSpacing(6)
+
+        header = QHBoxLayout()
+        icon_label = QLabel(icon)
+        icon_label.setObjectName("MutedText")
+        icon_label.setStyleSheet("font-size: 18pt; background: transparent;")
 
         title = QLabel("")
         title.setObjectName("SectionTitle")
+
+        header.addWidget(icon_label)
+        header.addWidget(title)
+        header.addStretch()
 
         value = QLabel("")
         value.setObjectName("CardValue")
@@ -99,11 +131,11 @@ class DashboardPage(QWidget):
         body.setObjectName("MutedText")
         body.setWordWrap(True)
 
-        layout.addWidget(title)
+        layout.addLayout(header)
         layout.addWidget(value)
         layout.addWidget(body)
 
-        return card, title, value, body
+        return card, title, icon_label, value, body
 
     def refresh(self) -> None:
         self.title_label.setText(t("dashboard.page_title"))
@@ -136,20 +168,20 @@ class DashboardPage(QWidget):
             self.mouse_value.setProperty("role", "success")
             self.mouse_body.setText(t("dashboard.mouse_unlocked_desc"))
 
+        guard_active = self.context.microphone_guard_service._guard_enabled
         device = self.context.microphone_guard_service.get_device("default-capture")
 
         if device is not None:
-            guard_active = bool(device.guard_enabled)
             if guard_active:
                 state_text = t("dashboard.microphone_state_active", level=device.current_level)
+                self.microphone_value.setProperty("role", "success")
+                self.guard_badge.setText("🟢 Guard an")
             else:
                 state_text = t("dashboard.microphone_state_inactive", level=device.current_level)
+                self.microphone_value.setProperty("role", "neutral")
+                self.guard_badge.setText("⚪ Guard aus")
 
             self.microphone_value.setText(state_text)
-            self.microphone_value.setProperty(
-                "role",
-                "success" if guard_active else "neutral",
-            )
             self.microphone_body.setText(t("dashboard.microphone_body_active"))
             self.guard_text.setText(
                 t(
@@ -164,11 +196,13 @@ class DashboardPage(QWidget):
             self.microphone_value.setProperty("role", "danger")
             self.microphone_body.setText(t("dashboard.microphone_body_unavailable"))
             self.guard_text.setText(t("dashboard.guard_text_unavailable"))
+            self.guard_badge.setText("❌ Kein Gerät")
 
+        correction_time = self.context.microphone_guard_service.get_last_correction_text()
         self.guard_correction.setText(
             t(
                 "dashboard.last_correction",
-                time=self.context.microphone_guard_service.get_last_correction_text(),
+                time=correction_time,
             )
         )
 

@@ -10,18 +10,23 @@ _current_language = "en"
 
 
 def load_translations() -> None:
+    """Dynamically loads all JSON language files from the languages directory."""
     global TRANSLATIONS
-    for lang in ["en", "de"]:
-        path = LANGUAGES_DIR / f"{lang}.json"
-        if path.exists():
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    TRANSLATIONS[lang] = json.load(f)
-            except Exception as e:
-                print(f"Error loading translation for {lang}: {e}")
-        else:
-            # Fallback mock for safety if files are missing in build environments
-            TRANSLATIONS[lang] = {}
+    TRANSLATIONS = {}
+    if not LANGUAGES_DIR.exists():
+        return
+    for lang_file in LANGUAGES_DIR.glob("*.json"):
+        lang_code = lang_file.stem
+        try:
+            with open(lang_file, "r", encoding="utf-8") as f:
+                TRANSLATIONS[lang_code] = json.load(f)
+        except Exception as e:
+            print(f"Error loading translation for {lang_code}: {e}")
+
+
+def get_available_languages() -> list[str]:
+    """Returns a list of all available language codes."""
+    return list(TRANSLATIONS.keys())
 
 
 # Initialize translation dictionaries
