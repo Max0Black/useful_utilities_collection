@@ -9,6 +9,20 @@ def print_step(title: str) -> None:
     print(f">> {title}")
     print(f"==================================================")
 
+def _generate_version_info(root_dir: Path, venv_python: Path) -> None:
+    """Regenerate version_info.txt from src/useful_utilities_collection/version.py."""
+    print_step("Generating version_info.txt from version.py...")
+    script = (
+        "import sys; sys.path.insert(0, 'src'); "
+        "from useful_utilities_collection.version import generate_version_info_txt; "
+        "open('version_info.txt', 'w', encoding='utf-8').write(generate_version_info_txt())"
+    )
+    try:
+        subprocess.check_call([str(venv_python), "-c", script])
+        print("[Info] version_info.txt updated successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"[Warning] Could not generate version_info.txt: {e}")
+
 def main() -> None:
     root_dir = Path(__file__).resolve().parent
     os.chdir(root_dir)
@@ -77,6 +91,9 @@ def main() -> None:
     if not spec_file.exists():
         print("[Error] Spec file 'UsefulUtilitiesCollection.spec' not found!")
         sys.exit(1)
+
+    # Auto-generate version_info.txt so the EXE always matches version.py
+    _generate_version_info(root_dir, venv_python)
 
     try:
         # Run pyinstaller with the spec file using python -m PyInstaller

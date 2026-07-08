@@ -1,4 +1,4 @@
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import (
     QFrame,
     QGridLayout,
@@ -74,6 +74,7 @@ class InputLockPage(QWidget):
 
         self.keyboard_button = QPushButton()
         self.keyboard_button.setObjectName("PrimaryButton")
+        self.keyboard_button.setFocusPolicy(Qt.StrongFocus)
         self.keyboard_button.clicked.connect(self.on_toggle_keyboard)
 
         keyboard_layout.addWidget(self.keyboard_title)
@@ -98,6 +99,7 @@ class InputLockPage(QWidget):
 
         self.mouse_button = QPushButton()
         self.mouse_button.setObjectName("PrimaryButton")
+        self.mouse_button.setFocusPolicy(Qt.StrongFocus)
         self.mouse_button.clicked.connect(self.on_toggle_mouse)
 
         mouse_layout.addWidget(self.mouse_title)
@@ -233,10 +235,26 @@ class InputLockPage(QWidget):
         self._repolish_status_widgets()
 
     def _repolish_status_widgets(self) -> None:
+        keyboard_locked = self.context.input_lock_service.state.keyboard_locked()
+        mouse_locked = self.context.input_lock_service.state.mouse_locked()
+
+        # Update button styles to reflect locked/unlocked state
+        if keyboard_locked:
+            self.keyboard_button.setObjectName("DangerButton")
+        else:
+            self.keyboard_button.setObjectName("PrimaryButton")
+
+        if mouse_locked:
+            self.mouse_button.setObjectName("DangerButton")
+        else:
+            self.mouse_button.setObjectName("PrimaryButton")
+
         widgets = [
             self.overview_status,
             self.keyboard_status,
             self.mouse_status,
+            self.keyboard_button,
+            self.mouse_button,
         ]
 
         for widget in widgets:

@@ -38,7 +38,12 @@ class MainWindow(QMainWindow):
         self.nav_buttons: list[QPushButton] = []
 
         self.setWindowTitle("Useful Utilities Collection")
-        self.resize(1120, 760)
+        self.resize(1200, 820)
+        # Prevent Qt from auto-resizing when child widgets change their size hints.
+        # The user's chosen window size must always be respected.
+        self.setMinimumSize(640, 480)
+        from PySide6.QtWidgets import QSizePolicy as _SP
+        self.setSizePolicy(_SP.Ignored, _SP.Ignored)
 
         root = QWidget()
         root.setObjectName("AppRoot")
@@ -140,10 +145,10 @@ class MainWindow(QMainWindow):
         guard_active = self.context.microphone_guard_service._guard_enabled
         if guard_active:
             self.guard_dot.setProperty("active", "true")
-            self.guard_status_text.setText("Guard aktiv" if self._is_german() else "Guard active")
+            self.guard_status_text.setText(t("microphone_guard.status_title_active"))
         else:
             self.guard_dot.setProperty("active", "false")
-            self.guard_status_text.setText("Guard aus" if self._is_german() else "Guard off")
+            self.guard_status_text.setText(t("microphone_guard.status_title_inactive"))
         self.style().unpolish(self.guard_dot)
         self.style().polish(self.guard_dot)
 

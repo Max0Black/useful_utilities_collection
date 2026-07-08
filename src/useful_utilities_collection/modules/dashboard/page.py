@@ -65,16 +65,8 @@ class DashboardPage(QWidget):
         guard_layout.setContentsMargins(18, 18, 18, 18)
         guard_layout.setSpacing(10)
 
-        guard_header = QHBoxLayout()
         self.guard_title = QLabel()
         self.guard_title.setObjectName("SectionTitle")
-        guard_header.addWidget(self.guard_title)
-        guard_header.addStretch()
-
-        # Guard state badge
-        self.guard_badge = QLabel()
-        self.guard_badge.setObjectName("MutedText")
-        guard_header.addWidget(self.guard_badge)
 
         self.guard_text = QLabel("")
         self.guard_text.setObjectName("MutedText")
@@ -85,7 +77,7 @@ class DashboardPage(QWidget):
         self.guard_correction.setProperty("role", "accent")
         self.guard_correction.setWordWrap(True)
 
-        guard_layout.addLayout(guard_header)
+        guard_layout.addWidget(self.guard_title)
         guard_layout.addWidget(self.guard_text)
         guard_layout.addWidget(self.guard_correction)
 
@@ -175,11 +167,9 @@ class DashboardPage(QWidget):
             if guard_active:
                 state_text = t("dashboard.microphone_state_active", level=device.current_level)
                 self.microphone_value.setProperty("role", "success")
-                self.guard_badge.setText("🟢 Guard an")
             else:
                 state_text = t("dashboard.microphone_state_inactive", level=device.current_level)
                 self.microphone_value.setProperty("role", "neutral")
-                self.guard_badge.setText("⚪ Guard aus")
 
             self.microphone_value.setText(state_text)
             self.microphone_body.setText(t("dashboard.microphone_body_active"))
@@ -196,7 +186,6 @@ class DashboardPage(QWidget):
             self.microphone_value.setProperty("role", "danger")
             self.microphone_body.setText(t("dashboard.microphone_body_unavailable"))
             self.guard_text.setText(t("dashboard.guard_text_unavailable"))
-            self.guard_badge.setText("❌ Kein Gerät")
 
         correction_time = self.context.microphone_guard_service.get_last_correction_text()
         self.guard_correction.setText(
