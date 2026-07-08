@@ -25,11 +25,11 @@ class TestTranslation(unittest.TestCase):
         # Test with string formatting variables (e.g. {level})
         translation.set_language("en")
         formatted = translation.t("dashboard.microphone_state_active", level=85)
-        self.assertEqual(formatted, "Active · 85%")
+        self.assertEqual(formatted, "Guard active · 85%")
         
         translation.set_language("de")
         formatted_de = translation.t("dashboard.microphone_state_active", level=85)
-        self.assertEqual(formatted_de, "Aktiv · 85%")
+        self.assertEqual(formatted_de, "Guard aktiv · 85%")
 
     def test_all_languages_have_matching_keys(self):
         # Verify that English and German translation files have the exact same set of keys

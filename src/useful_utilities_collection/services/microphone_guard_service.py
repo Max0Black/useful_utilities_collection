@@ -41,7 +41,7 @@ class MicrophoneGuardService:
             self._settings.value("microphone_guard/guard_enabled", False)
         )
         self._guard_mode: str = self._settings.value("microphone_guard/guard_mode", "selected")
-        self._last_correction_text: str = "Never"
+        self._last_correction_text: str = "–"
         self._cached_devices: list[MicrophoneDevice] = []
         
         # Legacy fields for backward compatibility and tests
@@ -263,7 +263,7 @@ class MicrophoneGuardService:
         if previous_level != target_level:
             changed = self._set_device_volume_level(device_id, target_level)
             if changed:
-                self._last_correction_text = datetime.now().strftime("%H:%M:%S")
+                self._last_correction_text = datetime.now().strftime("%d.%m.%Y, %H:%M:%S")
                 current_level = self._get_device_volume_level(device_id) or target_level
                 device.current_level = current_level
                 return GuardRestoreResult(
@@ -281,9 +281,16 @@ class MicrophoneGuardService:
         )
 
     def refresh_and_enforce_selected(self) -> GuardRestoreResult:
+        # Performance: only call list_devices() once per tick
         devices = self.refresh_devices()
+
         if not self._guard_enabled:
-            selected_dev = self.refresh_selected_device_state()
+            # Use cached data – avoid second API round-trip
+            selected_id = self.get_selected_device_id()
+            selected_dev = next(
+                (d for d in devices if d.device_id == selected_id),
+                next((d for d in devices if d.is_default), devices[0] if devices else None)
+            )
             return GuardRestoreResult(
                 restored=False,
                 previous_level=selected_dev.current_level if selected_dev else None,
@@ -324,7 +331,7 @@ class MicrophoneGuardService:
                 changed = self._set_device_volume_level(dev.device_id, target_level)
                 if changed:
                     restored_any = True
-                    self._last_correction_text = datetime.now().strftime("%H:%M:%S")
+                    self._last_correction_text = datetime.now().strftime("%d.%m.%Y, %H:%M:%S")
                     dev.current_level = target_level
                     corrected_devices.append({
                         "name": dev.display_name,
@@ -343,7 +350,12 @@ class MicrophoneGuardService:
             last_restored_result.corrected_devices = corrected_devices
             return last_restored_result
 
-        selected_dev = self.refresh_selected_device_state()
+        # Use cached result from devices list – avoid second API call
+        selected_id = self.get_selected_device_id()
+        selected_dev = next(
+            (d for d in devices if d.device_id == selected_id),
+            next((d for d in devices if d.is_default), devices[0] if devices else None)
+        )
         return GuardRestoreResult(
             restored=False,
             previous_level=selected_dev.current_level if selected_dev else None,

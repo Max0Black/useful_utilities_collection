@@ -83,7 +83,7 @@ def main() -> None:
         print(f"Compiling with command: {venv_python} -m PyInstaller --clean -y {spec_file.name}")
         subprocess.check_call([str(venv_python), "-m", "PyInstaller", "--clean", "-y", spec_file.name])
         
-        exe_path = dist_dir / "UsefulUtilitiesCollection.exe"
+        exe_path = dist_dir / "UUC.exe"
         if exe_path.exists():
             print_step("BUILD SUCCESSFUL!")
             print(f"Your standalone executable is ready at:")

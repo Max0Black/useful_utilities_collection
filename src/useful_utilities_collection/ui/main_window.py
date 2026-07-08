@@ -1,7 +1,8 @@
-from PySide6.QtCore import QEvent
+from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QAction, QCloseEvent, QGuiApplication, QIcon, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -50,13 +51,32 @@ class MainWindow(QMainWindow):
         sidebar = QWidget()
         sidebar.setObjectName("Sidebar")
         sidebar_layout = QVBoxLayout(sidebar)
-        sidebar_layout.setContentsMargins(16, 16, 16, 16)
-        sidebar_layout.setSpacing(12)
+        sidebar_layout.setContentsMargins(16, 20, 16, 20)
+        sidebar_layout.setSpacing(8)
 
-        self.sidebar_title = QLabel("Useful Utilities")
+        self.sidebar_title = QLabel("UUC")
         self.sidebar_title.setObjectName("SidebarTitle")
         sidebar_layout.addWidget(self.sidebar_title)
-        sidebar_layout.addSpacing(12)
+        sidebar_layout.addSpacing(16)
+
+        # Guard status indicator in sidebar
+        self.guard_status_indicator = QFrame()
+        self.guard_status_indicator.setObjectName("GuardStatusIndicator")
+        guard_indicator_layout = QHBoxLayout(self.guard_status_indicator)
+        guard_indicator_layout.setContentsMargins(10, 8, 10, 8)
+        guard_indicator_layout.setSpacing(8)
+
+        self.guard_dot = QLabel("●")
+        self.guard_dot.setObjectName("GuardDot")
+        self.guard_status_text = QLabel()
+        self.guard_status_text.setObjectName("GuardStatusText")
+
+        guard_indicator_layout.addWidget(self.guard_dot)
+        guard_indicator_layout.addWidget(self.guard_status_text)
+        guard_indicator_layout.addStretch()
+
+        sidebar_layout.addWidget(self.guard_status_indicator)
+        sidebar_layout.addSpacing(8)
 
         self.stack = QStackedWidget()
         self.stack.setObjectName("ContentStack")
@@ -87,7 +107,9 @@ class MainWindow(QMainWindow):
 
         # Connect state change to retranslate UI
         self.context.state_changed.connect(self.retranslate_ui)
+        self.context.state_changed.connect(self._update_guard_indicator)
         self.retranslate_ui()
+        self._update_guard_indicator()
 
         # Alt+F4 shortcut to directly quit and bypass everything
         self.alt_f4_shortcut = QShortcut(QKeySequence("Alt+F4"), self)
@@ -101,13 +123,33 @@ class MainWindow(QMainWindow):
         for button_index, button in enumerate(self.nav_buttons):
             button.setChecked(button_index == index)
 
-        self.refresh_pages()
+        # Performance fix: Only refresh the currently visible page
+        page = self.stack.widget(index)
+        if hasattr(page, "refresh"):
+            page.refresh()
 
-    def refresh_pages(self) -> None:
-        for index in range(self.stack.count()):
-            page = self.stack.widget(index)
-            if hasattr(page, "refresh"):
-                page.refresh()
+    def refresh_current_page(self) -> None:
+        """Refresh only the currently visible page."""
+        index = self.stack.currentIndex()
+        page = self.stack.widget(index)
+        if hasattr(page, "refresh"):
+            page.refresh()
+
+    def _update_guard_indicator(self) -> None:
+        """Update the guard status dot in the sidebar."""
+        guard_active = self.context.microphone_guard_service._guard_enabled
+        if guard_active:
+            self.guard_dot.setProperty("active", "true")
+            self.guard_status_text.setText("Guard aktiv" if self._is_german() else "Guard active")
+        else:
+            self.guard_dot.setProperty("active", "false")
+            self.guard_status_text.setText("Guard aus" if self._is_german() else "Guard off")
+        self.style().unpolish(self.guard_dot)
+        self.style().polish(self.guard_dot)
+
+    def _is_german(self) -> bool:
+        from useful_utilities_collection.core.translation import get_language
+        return get_language() == "de"
 
     def _setup_tray_icon(self) -> None:
         self.tray_icon = QSystemTrayIcon(self.app_icon, self)
@@ -174,6 +216,8 @@ class MainWindow(QMainWindow):
             if index < len(self.nav_buttons):
                 self.nav_buttons[index].setText(t(f"{module.module_id}.title"))
 
+        self._update_guard_indicator()
+
     def closeEvent(self, event: QCloseEvent) -> None:
         if self._allow_exit:
             self.context.input_lock_service.unlock()
@@ -181,7 +225,8 @@ class MainWindow(QMainWindow):
                 self.tray_icon.hide()
             event.accept()
         else:
-            if self.context.state.microphone_guard_active:
+            guard_active = self.context.microphone_guard_service._guard_enabled
+            if guard_active:
                 reply = QMessageBox.question(
                     self,
                     t("app.confirm_exit_title"),
@@ -195,21 +240,25 @@ class MainWindow(QMainWindow):
                 else:
                     event.ignore()
             else:
-                self.exit_app()
-                event.accept()
+                event.ignore()
+                self.hide()
+                if hasattr(self, "tray_icon") and self.tray_icon.isVisible():
+                    self.tray_icon.showMessage(
+                        t("app.tray_message_title"),
+                        t("app.tray_message_body"),
+                        QSystemTrayIcon.Information,
+                        3000
+                    )
 
     def changeEvent(self, event: QEvent) -> None:
         if event.type() == QEvent.WindowStateChange:
             if self.isMinimized():
                 if self.context.settings_service.get_close_to_tray():
-                    # Hide the window to send it to the system tray
                     self.hide()
-                    
-                    # Unlock mouse and keyboard if they were locked
+
                     if self.context.input_lock_service.keyboard_locked() or self.context.input_lock_service.mouse_locked():
                         self.context.input_lock_service.unlock()
-                        
-                    # Show tray notification
+
                     if hasattr(self, "tray_icon") and self.tray_icon.isVisible():
                         self.tray_icon.showMessage(
                             t("app.tray_message_title"),
