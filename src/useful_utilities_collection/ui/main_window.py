@@ -231,22 +231,26 @@ class MainWindow(QMainWindow):
             if hasattr(self, "tray_icon"):
                 self.tray_icon.hide()
             event.accept()
-        else:
-            guard_active = self.context.microphone_guard_service._guard_enabled
-            if guard_active:
-                reply = QMessageBox.question(
-                    self,
-                    t("app.confirm_exit_title"),
-                    t("app.confirm_exit_body"),
-                    QMessageBox.Yes | QMessageBox.No,
-                    QMessageBox.No
-                )
-                if reply == QMessageBox.Yes:
-                    self.exit_app()
-                    event.accept()
-                else:
-                    event.ignore()
+            return
+
+        close_to_tray = self.context.settings_service.get_close_to_tray()
+        guard_active = self.context.microphone_guard_service._guard_enabled
+
+        if guard_active:
+            reply = QMessageBox.question(
+                self,
+                t("app.confirm_exit_title"),
+                t("app.confirm_exit_body"),
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                self.exit_app()
+                event.accept()
             else:
+                event.ignore()
+        else:
+            if close_to_tray:
                 event.ignore()
                 self.hide()
                 if hasattr(self, "tray_icon") and self.tray_icon.isVisible():
@@ -257,6 +261,9 @@ class MainWindow(QMainWindow):
                             QSystemTrayIcon.Information,
                             3000
                         )
+            else:
+                self.exit_app()
+                event.accept()
 
     def changeEvent(self, event: QEvent) -> None:
         if event.type() == QEvent.WindowStateChange:

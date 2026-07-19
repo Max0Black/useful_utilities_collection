@@ -12,6 +12,8 @@ from PySide6.QtWidgets import (
 )
 
 from useful_utilities_collection.core.translation import get_available_languages, set_language, t
+from useful_utilities_collection.ui.components import BasePage
+
 
 
 class LiveHotkeyEdit(QLabel):
@@ -164,10 +166,9 @@ class LiveHotkeyEdit(QLabel):
         super().focusOutEvent(event)
 
 
-class SettingsPage(QWidget):
+class SettingsPage(BasePage):
     def __init__(self, context):
-        super().__init__()
-        self.context = context
+        super().__init__(context)
         self.service = context.settings_service
 
         layout = QVBoxLayout(self)
@@ -179,15 +180,6 @@ class SettingsPage(QWidget):
 
         self.subtitle_label = QLabel()
         self.subtitle_label.setObjectName("MutedText")
-
-        self.toast_label = QLabel("", self)
-        self.toast_label.setObjectName("ToastMessage")
-        self.toast_label.setWordWrap(True)
-        self.toast_label.hide()
-
-        self.toast_timer = QTimer(self)
-        self.toast_timer.setSingleShot(True)
-        self.toast_timer.timeout.connect(self.toast_label.hide)
 
         # Panel General
         self.general_panel = QFrame()
@@ -321,25 +313,7 @@ class SettingsPage(QWidget):
         self.context.state_changed.connect(self.refresh)
         self.refresh()
 
-    def resizeEvent(self, event) -> None:
-        super().resizeEvent(event)
-        self._position_toast()
 
-    def _position_toast(self) -> None:
-        if not self.toast_label.isHidden():
-            self.toast_label.adjustSize()
-        margin = 20
-        x = max(margin, self.width() - self.toast_label.width() - margin)
-        y = margin
-        self.toast_label.move(x, y)
-
-    def show_toast(self, message: str) -> None:
-        self.toast_label.setText(message)
-        self.toast_label.adjustSize()
-        self._position_toast()
-        self.toast_label.show()
-        self.toast_label.raise_()
-        self.toast_timer.start(2200)
 
     # Human-readable display names for language codes
     _LANG_DISPLAY_NAMES = {

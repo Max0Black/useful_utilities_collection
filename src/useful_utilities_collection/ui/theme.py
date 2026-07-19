@@ -1,22 +1,77 @@
-APP_STYLE = """
+# ── Central Color Palette ───────────────────────────────────────────
+COLOR_PALETTE = {
+    # Main app backgrounds
+    "COLOR_BG_WINDOW": "#0d1117",
+    "COLOR_BG_ROOT_STACK": "#11161d",
+    "COLOR_BG_PANEL_SIDEBAR_BTN": "#161b22",
+    "COLOR_BG_INPUT_CONTROL": "#1a2030",
+    "COLOR_BG_PROGRESS": "#0f141a",
+    "COLOR_BG_GUARD_BADGE": "#0f2038",
+    "COLOR_BG_TOAST": "#1f3a6e",
+
+    # Borders
+    "COLOR_BORDER_STACK": "#212834",
+    "COLOR_BORDER_PANEL_SIDEBAR_CTRL": "#2d333b",
+
+    # Core theme colors
+    "COLOR_PRIMARY": "#1f6feb",
+    "COLOR_BG_PRIMARY_HOVER": "#388bfd",
+    "COLOR_ACCENT": "#58a6ff",
+    "COLOR_SUCCESS": "#2ea043",
+    "COLOR_DANGER": "#f85149",
+    
+    # Text colors
+    "COLOR_TEXT_MAIN": "#e6edf3",
+    "COLOR_TEXT_WHITE": "#ffffff",
+    "COLOR_TEXT_MUTED_LIGHT": "#9da7b3",
+    "COLOR_TEXT_MUTED_DARK": "#555e6a",
+
+    # Mic Tags Specific Colors
+    "COLOR_BG_MIC_TAG_ACTIVE": "#1a2a1a",
+    "COLOR_BORDER_MIC_TAG_ACTIVE": "#2ea043",
+    "COLOR_BG_MIC_TAG_ACTIVE_HOVER": "#22382a",
+    "COLOR_BORDER_MIC_TAG_ACTIVE_HOVER": "#3fb950",
+    "COLOR_BG_MIC_TAG_ACTIVE_SELECTED": "#1e3020",
+    "COLOR_BORDER_MIC_TAG_ACTIVE_SELECTED": "#3fb950",
+    "COLOR_BG_MIC_TAG_ACTIVE_SELECTED_HOVER": "#254030",
+    "COLOR_BORDER_MIC_TAG_ACTIVE_SELECTED_HOVER": "#56d364",
+    "COLOR_BG_MIC_TAG_SELECTED": "#1a2038",
+    "COLOR_BORDER_MIC_TAG_SELECTED": "#58a6ff",
+    "COLOR_BG_MIC_TAG_SELECTED_HOVER": "#202a4a",
+    "COLOR_BORDER_MIC_TAG_SELECTED_HOVER": "#79c0ff",
+    "COLOR_BG_MIC_TAG_INACTIVE": "#1e2028",
+    "COLOR_BORDER_MIC_TAG_INACTIVE": "#3a4552",
+    "COLOR_BG_MIC_TAG_INACTIVE_HOVER": "#252b36",
+
+    # Buttons Hover & Alert Variants
+    "COLOR_BG_BTN_HOVER": "#1f2630",
+    "COLOR_BORDER_BTN_HOVER": "#3a4552",
+    "COLOR_BG_DANGER": "#6e1a1a",
+    "COLOR_BG_DANGER_HOVER": "#8b2020",
+    "COLOR_BG_SMALL_SEC_BTN": "#1e2630",
+    "COLOR_BG_SMALL_SEC_BTN_HOVER": "#253040",
+}
+
+# ── Dynamic Stylesheet Template ───────────────────────────────────────
+_RAW_STYLE = """
 QMainWindow {
-    background: #0d1117;
+    background: COLOR_BG_WINDOW;
 }
 
 QWidget {
-    color: #e6edf3;
+    color: COLOR_TEXT_MAIN;
     font-family: "Segoe UI", "Inter", sans-serif;
     font-size: 10pt;
 }
 
 QWidget#AppRoot {
-    background: #11161d;
+    background: COLOR_BG_ROOT_STACK;
     border-radius: 0px;
 }
 
 QStackedWidget#ContentStack {
-    background: #11161d;
-    border: 1px solid #212834;
+    background: COLOR_BG_ROOT_STACK;
+    border: 1px solid COLOR_BORDER_STACK;
     border-radius: 18px;
 }
 
@@ -35,15 +90,15 @@ QWidget#MicGuardInner {
 }
 
 QWidget#Sidebar {
-    background: #161b22;
-    border: 1px solid #2d333b;
+    background: COLOR_BG_PANEL_SIDEBAR_BTN;
+    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
     border-radius: 18px;
     min-width: 220px;
     max-width: 240px;
 }
 
 QLabel#SidebarTitle {
-    color: #ffffff;
+    color: COLOR_TEXT_WHITE;
     font-size: 16pt;
     font-weight: 700;
     background: transparent;
@@ -51,100 +106,100 @@ QLabel#SidebarTitle {
 
 /* ── Guard status indicator in sidebar ─────────────────────── */
 QFrame#GuardStatusIndicator {
-    background: #1a2030;
-    border: 1px solid #2d333b;
+    background: COLOR_BG_INPUT_CONTROL;
+    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
     border-radius: 10px;
 }
 
 QLabel#GuardDot {
     font-size: 10pt;
     background: transparent;
-    color: #555e6a;
+    color: COLOR_TEXT_MUTED_DARK;
 }
 
 QLabel#GuardDot[active="true"] {
-    color: #2ea043;
+    color: COLOR_SUCCESS;
 }
 
 QLabel#GuardDot[active="false"] {
-    color: #555e6a;
+    color: COLOR_TEXT_MUTED_DARK;
 }
 
 QLabel#GuardStatusText {
     font-size: 9pt;
-    color: #9da7b3;
+    color: COLOR_TEXT_MUTED_LIGHT;
     background: transparent;
 }
 
 /* ── Page titles ───────────────────────────────────────────── */
 QLabel#PageTitle {
-    color: #ffffff;
+    color: COLOR_TEXT_WHITE;
     font-size: 21pt;
     font-weight: 700;
     background: transparent;
 }
 
 QLabel#SectionTitle {
-    color: #ffffff;
+    color: COLOR_TEXT_WHITE;
     font-size: 11pt;
     font-weight: 600;
     background: transparent;
 }
 
 QLabel#MutedText {
-    color: #9da7b3;
+    color: COLOR_TEXT_MUTED_LIGHT;
     font-size: 10pt;
     background: transparent;
 }
 
 /* ── Card values ───────────────────────────────────────────── */
 QLabel#CardValue {
-    color: #e6edf3;
+    color: COLOR_TEXT_MAIN;
     font-size: 18pt;
     font-weight: 700;
     background: transparent;
 }
 
 QLabel#CardValue[role="success"] {
-    color: #2ea043;
+    color: COLOR_SUCCESS;
     font-weight: 700;
     background: transparent;
 }
 
 QLabel#CardValue[role="danger"] {
-    color: #f85149;
+    color: COLOR_DANGER;
     font-weight: 700;
     background: transparent;
 }
 
 QLabel#CardValue[role="accent"] {
-    color: #58a6ff;
+    color: COLOR_ACCENT;
     font-weight: 700;
     background: transparent;
 }
 
 QLabel#CardValue[role="neutral"] {
-    color: #e6edf3;
+    color: COLOR_TEXT_MAIN;
     font-weight: 700;
     background: transparent;
 }
 
 /* ── Panels ────────────────────────────────────────────────── */
 QFrame#Panel {
-    background: #161b22;
-    border: 1px solid #2d333b;
+    background: COLOR_BG_PANEL_SIDEBAR_BTN;
+    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
     border-radius: 16px;
 }
 
 /* ── Guard Mode panel – more prominent ─────────────────────── */
 QFrame#GuardModePanel {
-    background: #161b22;
-    border: 1px solid #1f6feb;
+    background: COLOR_BG_PANEL_SIDEBAR_BTN;
+    border: 1px solid COLOR_PRIMARY;
     border-radius: 14px;
 }
 
 QLabel#GuardModeTitle {
-    color: #58a6ff;
+    color: COLOR_ACCENT;
     font-size: 10pt;
     font-weight: 700;
     background: transparent;
@@ -154,58 +209,58 @@ QLabel#GuardModeTitle {
 
 /* Active mic (guard ON) – green */
 QFrame#MicTagActive {
-    background: #1a2a1a;
-    border: 1px solid #2ea043;
+    background: COLOR_BG_MIC_TAG_ACTIVE;
+    border: 1px solid COLOR_BORDER_MIC_TAG_ACTIVE;
     border-radius: 8px;
     padding: 2px 0px;
 }
 
 QFrame#MicTagActive:hover {
-    background: #22382a;
-    border-color: #3fb950;
+    background: COLOR_BG_MIC_TAG_ACTIVE_HOVER;
+    border-color: COLOR_BORDER_MIC_TAG_ACTIVE_HOVER;
 }
 
 /* Active + currently selected – green with thicker border */
 QFrame#MicTagActiveSelected {
-    background: #1e3020;
-    border: 2px solid #3fb950;
+    background: COLOR_BG_MIC_TAG_ACTIVE_SELECTED;
+    border: 2px solid COLOR_BORDER_MIC_TAG_ACTIVE_SELECTED;
     border-radius: 8px;
     padding: 2px 0px;
 }
 
 QFrame#MicTagActiveSelected:hover {
-    background: #254030;
-    border-color: #56d364;
+    background: COLOR_BG_MIC_TAG_ACTIVE_SELECTED_HOVER;
+    border-color: COLOR_BORDER_MIC_TAG_ACTIVE_SELECTED_HOVER;
 }
 
 /* Inactive but currently selected – blue outline */
 QFrame#MicTagSelected {
-    background: #1a2038;
-    border: 2px solid #58a6ff;
+    background: COLOR_BG_MIC_TAG_SELECTED;
+    border: 2px solid COLOR_BORDER_MIC_TAG_SELECTED;
     border-radius: 8px;
     padding: 2px 0px;
 }
 
 QFrame#MicTagSelected:hover {
-    background: #202a4a;
-    border-color: #79c0ff;
+    background: COLOR_BG_MIC_TAG_SELECTED_HOVER;
+    border-color: COLOR_BORDER_MIC_TAG_SELECTED_HOVER;
 }
 
 /* Inactive, not selected */
 QFrame#MicTagInactive {
-    background: #1e2028;
-    border: 1px solid #3a4552;
+    background: COLOR_BG_MIC_TAG_INACTIVE;
+    border: 1px solid COLOR_BORDER_MIC_TAG_INACTIVE;
     border-radius: 8px;
     padding: 2px 0px;
 }
 
 QFrame#MicTagInactive:hover {
-    background: #252b36;
-    border-color: #58a6ff;
+    background: COLOR_BG_MIC_TAG_INACTIVE_HOVER;
+    border-color: COLOR_ACCENT;
 }
 
 QLabel#MicTagDot {
-    color: #2ea043;
+    color: COLOR_SUCCESS;
     font-size: 8pt;
     background: transparent;
 }
@@ -224,107 +279,108 @@ QLabel#MicTagText {
 
 QFrame#MicTagActive QLabel,
 QFrame#MicTagActiveSelected QLabel {
-    color: #2ea043;
+    color: COLOR_SUCCESS;
 }
 
 QFrame#MicTagSelected QLabel {
-    color: #79c0ff;
+    color: COLOR_BORDER_MIC_TAG_SELECTED_HOVER;
 }
 
 QFrame#MicTagInactive QLabel {
-    color: #9da7b3;
+    color: COLOR_TEXT_MUTED_LIGHT;
 }
+
 /* ── Buttons ───────────────────────────────────────────────── */
 QPushButton {
-    background: #161b22;
-    border: 1px solid #2d333b;
+    background: COLOR_BG_PANEL_SIDEBAR_BTN;
+    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
     border-radius: 12px;
     padding: 12px 14px;
     text-align: left;
-    color: #e6edf3;
+    color: COLOR_TEXT_MAIN;
 }
 
 QPushButton:hover {
-    background: #1f2630;
-    border-color: #3a4552;
+    background: COLOR_BG_BTN_HOVER;
+    border-color: COLOR_BORDER_BTN_HOVER;
 }
 
 QPushButton:checked {
-    background: #1f6feb;
-    border-color: #1f6feb;
-    color: #ffffff;
+    background: COLOR_PRIMARY;
+    border-color: COLOR_PRIMARY;
+    color: COLOR_TEXT_WHITE;
 }
 
 QPushButton#PrimaryButton {
-    background: #1f6feb;
+    background: COLOR_PRIMARY;
     border: none;
     border-radius: 12px;
     padding: 14px 18px;
     text-align: center;
     font-weight: 600;
-    color: #ffffff;
+    color: COLOR_TEXT_WHITE;
 }
 
 QPushButton#PrimaryButton:hover {
-    background: #388bfd;
+    background: COLOR_BG_PRIMARY_HOVER;
 }
 
 QPushButton#DangerButton {
-    background: #6e1a1a;
-    border: 1px solid #f85149;
+    background: COLOR_BG_DANGER;
+    border: 1px solid COLOR_DANGER;
     border-radius: 12px;
     padding: 14px 18px;
     text-align: center;
     font-weight: 600;
-    color: #ffffff;
+    color: COLOR_TEXT_WHITE;
 }
 
 QPushButton#DangerButton:hover {
-    background: #8b2020;
+    background: COLOR_BG_DANGER_HOVER;
 }
 
 /* ── Small action buttons (for mic panel header) ───────────── */
 QPushButton#SmallPrimaryButton {
-    background: #1f6feb;
+    background: COLOR_PRIMARY;
     border: none;
     border-radius: 8px;
     padding: 5px 12px;
     font-weight: 600;
     font-size: 9pt;
-    color: #ffffff;
+    color: COLOR_TEXT_WHITE;
 }
 
 QPushButton#SmallPrimaryButton:hover {
-    background: #388bfd;
+    background: COLOR_BG_PRIMARY_HOVER;
 }
 
 QPushButton#SmallDangerButton {
-    background: #6e1a1a;
-    border: 1px solid #f85149;
+    background: COLOR_BG_DANGER;
+    border: 1px solid COLOR_DANGER;
     border-radius: 8px;
     padding: 5px 12px;
     font-weight: 600;
     font-size: 9pt;
-    color: #ffffff;
+    color: COLOR_TEXT_WHITE;
 }
 
 QPushButton#SmallDangerButton:hover {
-    background: #8b2020;
+    background: COLOR_BG_DANGER_HOVER;
 }
 
 QPushButton#SmallSecondaryButton {
-    background: #1e2630;
-    border: 1px solid #3a4552;
+    background: COLOR_BG_SMALL_SEC_BTN;
+    border: 1px solid COLOR_BORDER_BTN_HOVER;
     border-radius: 8px;
     padding: 5px 12px;
     font-size: 9pt;
-    color: #9da7b3;
+    color: COLOR_TEXT_MUTED_LIGHT;
 }
 
 QPushButton#SmallSecondaryButton:hover {
-    background: #253040;
-    border-color: #58a6ff;
-    color: #e6edf3;
+    background: COLOR_BG_SMALL_SEC_BTN_HOVER;
+    border-color: COLOR_ACCENT;
+    color: COLOR_TEXT_MAIN;
 }
 
 /* ── Form controls ─────────────────────────────────────────── */
@@ -333,16 +389,16 @@ QComboBox, QDoubleSpinBox, QCheckBox, QProgressBar, QSlider {
 }
 
 QComboBox, QDoubleSpinBox {
-    background: #1a2030;
-    border: 1px solid #2d333b;
+    background: COLOR_BG_INPUT_CONTROL;
+    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
     border-radius: 8px;
     padding: 6px 10px;
-    color: #e6edf3;
+    color: COLOR_TEXT_MAIN;
     min-width: 160px;
 }
 
 QComboBox:hover, QDoubleSpinBox:hover {
-    border-color: #3a4552;
+    border-color: COLOR_BORDER_BTN_HOVER;
 }
 
 QComboBox::drop-down {
@@ -350,11 +406,11 @@ QComboBox::drop-down {
 }
 
 QComboBox QAbstractItemView {
-    background: #1a2030;
-    border: 1px solid #2d333b;
+    background: COLOR_BG_INPUT_CONTROL;
+    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
     border-radius: 8px;
-    color: #e6edf3;
-    selection-background-color: #1f6feb;
+    color: COLOR_TEXT_MAIN;
+    selection-background-color: COLOR_PRIMARY;
 }
 
 QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
@@ -364,7 +420,7 @@ QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
 }
 
 QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
-    background: #252b36;
+    background: COLOR_BG_MIC_TAG_INACTIVE_HOVER;
 }
 
 QCheckBox {
@@ -375,32 +431,32 @@ QCheckBox::indicator {
     width: 18px;
     height: 18px;
     border-radius: 5px;
-    border: 1px solid #2d333b;
-    background: #1a2030;
+    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
+    background: COLOR_BG_INPUT_CONTROL;
 }
 
 QCheckBox::indicator:checked {
-    background: #1f6feb;
-    border-color: #1f6feb;
+    background: COLOR_PRIMARY;
+    border-color: COLOR_PRIMARY;
 }
 
 QProgressBar {
-    border: 1px solid #2d333b;
+    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
     border-radius: 8px;
-    background: #0f141a;
+    background: COLOR_BG_PROGRESS;
     text-align: center;
     min-height: 18px;
 }
 
 QProgressBar::chunk {
-    background: #1f6feb;
+    background: COLOR_PRIMARY;
     border-radius: 7px;
 }
 
 /* ── Toast notifications ───────────────────────────────────── */
 QLabel#ToastMessage {
-    background-color: #1f3a6e;
-    border: 1px solid #1f6feb;
+    background-color: COLOR_BG_TOAST;
+    border: 1px solid COLOR_PRIMARY;
     color: white;
     border-radius: 10px;
     padding: 10px 14px;
@@ -409,15 +465,27 @@ QLabel#ToastMessage {
 
 /* ── Status badge (active guard mode) ─────────────────────── */
 QFrame#ActiveGuardBadge {
-    background: #0f2038;
-    border: 2px solid #1f6feb;
+    background: COLOR_BG_GUARD_BADGE;
+    border: 2px solid COLOR_PRIMARY;
     border-radius: 12px;
 }
 
 QLabel#ActiveGuardLabel {
-    color: #58a6ff;
+    color: COLOR_ACCENT;
     font-weight: 700;
     font-size: 10pt;
     background: transparent;
 }
 """
+
+def generate_style() -> str:
+    """Replaces color constants in the raw style sheet and returns the resolved stylesheet string."""
+    resolved_style = _RAW_STYLE
+    # Sort keys by length in descending order to avoid prefix replacement conflicts
+    for key in sorted(COLOR_PALETTE.keys(), key=len, reverse=True):
+        val = COLOR_PALETTE[key]
+        resolved_style = resolved_style.replace(key, val)
+    return resolved_style
+
+# Expose the resolved style string for compatibility
+APP_STYLE = generate_style()

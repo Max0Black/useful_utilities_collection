@@ -16,6 +16,8 @@ from useful_utilities_collection.core.translation import t
 from useful_utilities_collection.modules.microphone_guard.controller import (
     MicrophoneGuardController,
 )
+from useful_utilities_collection.ui.components import BasePage, ToastLabel
+
 
 
 def _get_mic_icon(display_name: str, is_default: bool) -> str:
@@ -120,10 +122,9 @@ class MicTag(QFrame):
         super().keyPressEvent(event)
 
 
-class MicrophoneGuardPage(QWidget):
+class MicrophoneGuardPage(BasePage):
     def __init__(self, context):
-        super().__init__()
-        self.context = context
+        super().__init__(context)
         self.controller = MicrophoneGuardController(context)
 
         self._editing_target = False
@@ -154,13 +155,7 @@ class MicrophoneGuardPage(QWidget):
         root.setContentsMargins(28, 28, 28, 28)
         root.setSpacing(14)
 
-        self.toast_label = QLabel("", scroll.viewport())
-        self.toast_label.hide()
-        self.toast_label.setObjectName("ToastMessage")
-        self.toast_label.setWordWrap(True)
-        self.toast_timer = QTimer(self)
-        self.toast_timer.setSingleShot(True)
-        self.toast_timer.timeout.connect(self.toast_label.hide)
+        self.toast = ToastLabel(scroll.viewport())
         self._scroll = scroll
 
         # ── Header ───────────────────────────────────────────────────
@@ -300,24 +295,6 @@ class MicrophoneGuardPage(QWidget):
     # Toast
     # ─────────────────────────────────────────────────────────────────
 
-    def resizeEvent(self, event) -> None:
-        super().resizeEvent(event)
-        self._position_toast()
-
-    def _position_toast(self) -> None:
-        self.toast_label.adjustSize()
-        margin = 20
-        vp = self._scroll.viewport()
-        x = max(margin, vp.width() - self.toast_label.width() - margin)
-        self.toast_label.move(x, margin)
-
-    def show_toast(self, message: str) -> None:
-        self.toast_label.setText(message)
-        self.toast_label.adjustSize()
-        self._position_toast()
-        self.toast_label.show()
-        self.toast_label.raise_()
-        self.toast_timer.start(2200)
 
     # ─────────────────────────────────────────────────────────────────
     # Mic interactions
@@ -472,7 +449,7 @@ class MicrophoneGuardPage(QWidget):
         else:
             self.toggle_all_button.setText(t("microphone_guard.button_activate_all"))
             self.toggle_all_button.setObjectName("SmallPrimaryButton")
-        self._repolish(self.toggle_all_button)
+        self.repolish(self.toggle_all_button)
 
         # ── Mic tags ──────────────────────────────────────────────
         self._clear_mic_tags()
@@ -498,7 +475,7 @@ class MicrophoneGuardPage(QWidget):
             self.selected_device_label.setText(t("microphone_guard.status_title_unavailable"))
             self.restore_button.setEnabled(False)
             self.target_slider.setEnabled(False)
-            self._repolish(self.status_value)
+            self.repolish(self.status_value)
             return
 
         self.restore_button.setEnabled(True)
@@ -535,10 +512,4 @@ class MicrophoneGuardPage(QWidget):
             t("microphone_guard.last_correction", time=svc.get_last_correction_text())
         )
 
-        self._repolish(self.status_value, self.last_correction_label)
-
-    def _repolish(self, *widgets) -> None:
-        for widget in widgets:
-            self.style().unpolish(widget)
-            self.style().polish(widget)
-            widget.update()
+        self.repolish(self.status_value, self.last_correction_label)

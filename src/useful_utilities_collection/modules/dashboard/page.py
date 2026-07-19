@@ -5,16 +5,16 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QVBoxLayout,
-    QWidget,
 )
 
 from useful_utilities_collection.core.translation import t
+from useful_utilities_collection.ui.components import BasePage
 
 
-class DashboardPage(QWidget):
+class DashboardPage(BasePage):
     def __init__(self, context):
-        super().__init__()
-        self.context = context
+        super().__init__(context)
+
 
         root = QVBoxLayout(self)
         root.setContentsMargins(28, 28, 28, 28)
@@ -57,38 +57,19 @@ class DashboardPage(QWidget):
             self.microphone_body,
         ) = self._create_card("🎙")
 
-        # ── Microphone Guard Details Panel ───────────────────────────
-        self.guard_panel = QFrame()
-        self.guard_panel.setObjectName("Panel")
-
-        guard_layout = QVBoxLayout(self.guard_panel)
-        guard_layout.setContentsMargins(18, 18, 18, 18)
-        guard_layout.setSpacing(10)
-
-        self.guard_title = QLabel()
-        self.guard_title.setObjectName("SectionTitle")
-
-        self.guard_text = QLabel("")
-        self.guard_text.setObjectName("MutedText")
-        self.guard_text.setWordWrap(True)
-
-        self.guard_correction = QLabel("")
-        self.guard_correction.setObjectName("CardValue")
-        self.guard_correction.setProperty("role", "accent")
-        self.guard_correction.setWordWrap(True)
-
-        guard_layout.addWidget(self.guard_title)
-        guard_layout.addWidget(self.guard_text)
-        guard_layout.addWidget(self.guard_correction)
-
         cards.addWidget(self.keyboard_card, 0, 0)
         cards.addWidget(self.mouse_card, 0, 1)
         cards.addWidget(self.microphone_card, 1, 0, 1, 2)
 
+        self.microphone_correction = QLabel("")
+        self.microphone_correction.setObjectName("MutedText")
+        self.microphone_correction.setStyleSheet("color: #58a6ff; font-weight: 500; margin-top: 4px;")
+        self.microphone_correction.setWordWrap(True)
+        self.microphone_card.layout().addWidget(self.microphone_correction)
+
         root.addWidget(self.title_label)
         root.addWidget(self.subtitle_label)
         root.addLayout(cards)
-        root.addWidget(self.guard_panel)
         root.addStretch()
 
         self.context.input_lock_service.state.changed.connect(self.refresh)
@@ -136,7 +117,6 @@ class DashboardPage(QWidget):
         self.keyboard_card_title.setText(t("dashboard.keyboard_card_title"))
         self.mouse_card_title.setText(t("dashboard.mouse_card_title"))
         self.microphone_card_title.setText(t("dashboard.microphone_card_title"))
-        self.guard_title.setText(t("dashboard.protection_section_title"))
 
         input_lock_state = self.context.input_lock_service.state
         keyboard_locked = input_lock_state.keyboard_locked()
@@ -161,49 +141,55 @@ class DashboardPage(QWidget):
             self.mouse_body.setText(t("dashboard.mouse_unlocked_desc"))
 
         guard_active = self.context.microphone_guard_service._guard_enabled
-        device = self.context.microphone_guard_service.get_device("default-capture")
+        svc = self.context.microphone_guard_service
+        devices = svc._cached_devices or svc.list_devices()
+        active_devices = [d for d in devices if svc.is_device_guard_enabled(d.device_id)]
 
-        if device is not None:
+        if devices:
             if guard_active:
-                state_text = t("dashboard.microphone_state_active", level=device.current_level)
+                state_text = t("dashboard.microphone_state_active")
                 self.microphone_value.setProperty("role", "success")
+
+                # List active devices with details in the card body
+                lines = []
+                for d in active_devices:
+                    name = d.display_name
+                    if d.is_default:
+                        name += f" ({t('microphone_guard.default_label')})"
+                    lines.append(
+                        "• " + t(
+                            "dashboard.guard_text_active",
+                            name=name,
+                            level=d.current_level,
+                            target=d.target_level,
+                        )
+                    )
+
+                if lines:
+                    self.microphone_body.setText("\n".join(lines))
+                else:
+                    self.microphone_body.setText(t("dashboard.microphone_body_inactive"))
             else:
-                state_text = t("dashboard.microphone_state_inactive", level=device.current_level)
+                state_text = t("dashboard.microphone_state_inactive")
                 self.microphone_value.setProperty("role", "neutral")
+                self.microphone_body.setText(t("dashboard.microphone_body_inactive"))
 
             self.microphone_value.setText(state_text)
-            self.microphone_body.setText(t("dashboard.microphone_body_active"))
-            self.guard_text.setText(
-                t(
-                    "dashboard.guard_text_active",
-                    name=device.display_name,
-                    level=device.current_level,
-                    target=device.target_level,
-                )
-            )
         else:
             self.microphone_value.setText(t("dashboard.microphone_state_unavailable"))
             self.microphone_value.setProperty("role", "danger")
             self.microphone_body.setText(t("dashboard.microphone_body_unavailable"))
-            self.guard_text.setText(t("dashboard.guard_text_unavailable"))
 
         correction_time = self.context.microphone_guard_service.get_last_correction_text()
-        self.guard_correction.setText(
+        self.microphone_correction.setText(
             t(
                 "dashboard.last_correction",
                 time=correction_time,
             )
         )
 
-        self._repolish(
+        self.repolish(
             self.keyboard_value,
             self.mouse_value,
             self.microphone_value,
-            self.guard_correction,
         )
-
-    def _repolish(self, *widgets) -> None:
-        for widget in widgets:
-            self.style().unpolish(widget)
-            self.style().polish(widget)
-            widget.update()
