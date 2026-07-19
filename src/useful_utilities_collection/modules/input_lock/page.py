@@ -5,18 +5,18 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QVBoxLayout,
-    QWidget,
 )
 
 from useful_utilities_collection.core.translation import t
 from useful_utilities_collection.modules.input_lock.controller import InputLockController
+from useful_utilities_collection.ui.components import BasePage
 
 
-class InputLockPage(QWidget):
+class InputLockPage(BasePage):
     def __init__(self, context):
-        super().__init__()
-        self.context = context
+        super().__init__(context)
         self.controller = InputLockController(context)
+
 
         root = QVBoxLayout(self)
         root.setContentsMargins(28, 28, 28, 28)
@@ -29,14 +29,7 @@ class InputLockPage(QWidget):
         self.subtitle_label.setObjectName("MutedText")
         self.subtitle_label.setWordWrap(True)
 
-        self.toast_label = QLabel("", self)
-        self.toast_label.setObjectName("ToastMessage")
-        self.toast_label.setWordWrap(True)
-        self.toast_label.hide()
 
-        self.toast_timer = QTimer(self)
-        self.toast_timer.setSingleShot(True)
-        self.toast_timer.timeout.connect(self.toast_label.hide)
 
         self.overview_panel = self._create_panel()
         overview_layout = QVBoxLayout(self.overview_panel)
@@ -115,7 +108,6 @@ class InputLockPage(QWidget):
 
         root.addWidget(self.title_label)
         root.addWidget(self.subtitle_label)
-        root.addWidget(self.toast_label)
         root.addWidget(self.overview_panel)
         root.addLayout(panels)
         root.addStretch()
@@ -133,10 +125,7 @@ class InputLockPage(QWidget):
         panel.setObjectName("Panel")
         return panel
 
-    def show_toast(self, message: str) -> None:
-        self.toast_label.setText(message)
-        self.toast_label.show()
-        self.toast_timer.start(2200)
+
 
     def on_mouse_enforce_tick(self) -> None:
         self.controller.enforce()
@@ -257,9 +246,5 @@ class InputLockPage(QWidget):
             self.mouse_button,
         ]
 
-        for widget in widgets:
-            self.style().unpolish(widget)
-            self.style().polish(widget)
-            widget.update()
-
-        self.setStyleSheet(self.styleSheet())
+        self.repolish(*widgets)
+        self.setStyleSheet(self.styleSheet())

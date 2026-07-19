@@ -2,8 +2,8 @@
   "app": {
     "title": "UUC – Nützliche Tools",
     "sidebar_title": "Meine Tools",
-    "tray_message_title": "UUC läuft im Hintergrund",
-    "tray_message_body": "Die App ist im Tray aktiv. Der Mikrofon-Guard bleibt aktiviert.",
+    "tray_message_title": "Bin noch da!",
+    "tray_message_body": "Ab in den Hintergrund! Keine Sorge, ich halte heimlich die Stellung. 😉",
     "tray_tooltip": "Useful Utilities Collection",
     "tray_menu_show": "Fenster öffnen",
     "tray_menu_exit": "Beenden",
@@ -11,7 +11,8 @@
     "confirm_exit_body": "Der Mikrofon-Guard ist gerade aktiv. Wenn du die App schließt, wird das Mikrofon nicht mehr überwacht. Trotzdem beenden?",
     "guard_active_startup_title": "Guard ist aktiv!",
     "guard_active_startup_body": "Dein Mikrofon wird automatisch auf den Zielwert gehalten.",
-    "instance_already_running": "UUC läuft schon – das Fenster wird geöffnet."
+    "instance_already_running": "UUC läuft schon – das Fenster wird geöffnet.",
+    "starting": "Startet..."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -30,12 +31,14 @@
     "keyboard_unlocked_desc": "Tastatur ist normal nutzbar.",
     "mouse_locked_desc": "Maus ist gesperrt. Notfall-Entsperrung über Hotkey möglich.",
     "mouse_unlocked_desc": "Maus ist normal nutzbar.",
-    "microphone_state_active": "Guard aktiv · {level}%",
-    "microphone_state_inactive": "Guard deaktiviert · {level}%",
+    "microphone_state_active": "Guard aktiv",
+    "microphone_state_inactive": "Guard inaktiv",
     "microphone_state_unavailable": "Kein Mikrofon",
-    "microphone_body_active": "Dein Mikrofon wird auf dem Zielwert gehalten.",
+    "microphone_body_active": "{name} ({level}%)",
+    "microphone_body_inactive": "Keine Mikrofone werden derzeit geschützt.",
     "microphone_body_unavailable": "Kein Aufnahmegerät gefunden.",
     "guard_text_active": "{name} · Aktuell: {level}% · Ziel: {target}%",
+    "guard_text_inactive": "Der Mikrofon-Guard ist deaktiviert.",
     "guard_text_unavailable": "Kein Mikrofon gefunden – bitte prüfen.",
     "last_correction": "Letzte Korrektur: {time}"
   },
@@ -131,6 +134,9 @@
     "section_shortcut": "Eingabesperre",
     "shortcut_label": "Maus-Entsperr-Hotkey:",
     "shortcut_hint": "Tastenkombination zum Entsperren der Maus. Einfach ins Feld klicken und Tasten drücken.",
+    "section_notifications": "Benachrichtigungen",
+    "notify_on_correction_checkbox": "Benachrichtigung bei Lautstärkekorrektur des Mikrofons anzeigen",
+    "notify_on_minimize_checkbox": "Benachrichtigung beim Minimieren in den System-Tray anzeigen",
     "toast_saved": "Gespeichert!",
     "toast_shortcut_saved": "Tastenkombination gespeichert: {shortcut}",
     "toast_startup_enabled": "Autostart aktiviert.",
@@ -139,4 +145,3 @@
     "shortcut_recording": "⏺ Tasten drücken..."
   }
 }
-

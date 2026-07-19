@@ -2,8 +2,8 @@
   "app": {
     "title": "Useful Utilities Collection",
     "sidebar_title": "My Tools",
-    "tray_message_title": "UUC is running",
-    "tray_message_body": "The app is running in the background — the Mic Guard stays on.",
+    "tray_message_title": "Still alive!",
+    "tray_message_body": "Into the shadows! Don't worry, I'm secretly on guard duty. 😉",
     "tray_tooltip": "Useful Utilities Collection",
     "tray_menu_show": "Open Window",
     "tray_menu_exit": "Quit",
@@ -11,7 +11,8 @@
     "confirm_exit_body": "The Mic Guard is currently active. Your microphone won't be watched anymore if you close. Quit anyway?",
     "guard_active_startup_title": "Guard is on!",
     "guard_active_startup_body": "Your microphone volume is being kept at the target level.",
-    "instance_already_running": "UUC is already running — bringing it to the front."
+    "instance_already_running": "UUC is already running — bringing it to the front.",
+    "starting": "Starting..."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -30,12 +31,14 @@
     "keyboard_unlocked_desc": "Keyboard is working normally.",
     "mouse_locked_desc": "Mouse is locked. Emergency unlock via hotkey still works.",
     "mouse_unlocked_desc": "Mouse is working normally.",
-    "microphone_state_active": "Guard on · {level}%",
-    "microphone_state_inactive": "Guard off · {level}%",
+    "microphone_state_active": "Guard on",
+    "microphone_state_inactive": "Guard off",
     "microphone_state_unavailable": "No mic found",
-    "microphone_body_active": "Your microphone is being held at the target level.",
+    "microphone_body_active": "{name} ({level}%)",
+    "microphone_body_inactive": "No microphones are currently guarded.",
     "microphone_body_unavailable": "No recording device found.",
     "guard_text_active": "{name} · Now: {level}% · Target: {target}%",
+    "guard_text_inactive": "The microphone guard is deactivated.",
     "guard_text_unavailable": "No microphone found — please check your setup.",
     "last_correction": "Last correction: {time}"
   },
@@ -131,6 +134,9 @@
     "section_shortcut": "Input Lock",
     "shortcut_label": "Mouse unlock hotkey:",
     "shortcut_hint": "Key combo to unlock the mouse in an emergency. Just click the box and press the keys you want.",
+    "section_notifications": "Notifications",
+    "notify_on_correction_checkbox": "Show notification when microphone volume is corrected",
+    "notify_on_minimize_checkbox": "Show notification when minimized to tray",
     "toast_saved": "Saved!",
     "toast_shortcut_saved": "Shortcut saved: {shortcut}",
     "toast_startup_enabled": "Auto-start enabled.",

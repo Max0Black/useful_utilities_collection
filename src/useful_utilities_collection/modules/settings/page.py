@@ -12,6 +12,8 @@ from PySide6.QtWidgets import (
 )
 
 from useful_utilities_collection.core.translation import get_available_languages, set_language, t
+from useful_utilities_collection.ui.components import BasePage
+
 
 
 class LiveHotkeyEdit(QLabel):
@@ -117,6 +119,10 @@ class LiveHotkeyEdit(QLabel):
 
         self._pressed_keys.add(event.key())
         self._show_live_combo()
+        
+        # If a non-modifier key is pressed, commit the capture immediately
+        if event.key() not in self._modifier_map:
+            self._commit_capture()
         # Don't call super() – eat the key so it doesn't propagate
 
     def keyReleaseEvent(self, event) -> None:
@@ -160,10 +166,9 @@ class LiveHotkeyEdit(QLabel):
         super().focusOutEvent(event)
 
 
-class SettingsPage(QWidget):
+class SettingsPage(BasePage):
     def __init__(self, context):
-        super().__init__()
-        self.context = context
+        super().__init__(context)
         self.service = context.settings_service
 
         layout = QVBoxLayout(self)
@@ -175,15 +180,6 @@ class SettingsPage(QWidget):
 
         self.subtitle_label = QLabel()
         self.subtitle_label.setObjectName("MutedText")
-
-        self.toast_label = QLabel("", self)
-        self.toast_label.setObjectName("ToastMessage")
-        self.toast_label.setWordWrap(True)
-        self.toast_label.hide()
-
-        self.toast_timer = QTimer(self)
-        self.toast_timer.setSingleShot(True)
-        self.toast_timer.timeout.connect(self.toast_label.hide)
 
         # Panel General
         self.general_panel = QFrame()
@@ -201,6 +197,7 @@ class SettingsPage(QWidget):
         # Dynamically populate languages from available JSON files
         self._populate_language_combo()
         lang_row.addWidget(self.lang_label)
+        lang_row.addStretch()
         lang_row.addWidget(self.lang_combo)
 
         self.tray_checkbox = QCheckBox()
@@ -231,6 +228,7 @@ class SettingsPage(QWidget):
         self.interval_combo.addItem("3.0 seconds (Eco mode)", 3000)
         self.interval_combo.addItem("Custom...", "custom")
         interval_row.addWidget(self.interval_label)
+        interval_row.addStretch()
         interval_row.addWidget(self.interval_combo)
 
         # Custom interval container
@@ -243,11 +241,29 @@ class SettingsPage(QWidget):
         self.custom_interval_spin.setSingleStep(0.1)
         self.custom_interval_spin.setSuffix(" s")
         custom_interval_layout.addWidget(self.custom_interval_label)
+        custom_interval_layout.addStretch()
         custom_interval_layout.addWidget(self.custom_interval_spin)
 
         mic_layout.addWidget(self.mic_title)
         mic_layout.addLayout(interval_row)
         mic_layout.addWidget(self.custom_interval_container)
+
+        # Panel Notifications
+        self.notifications_panel = QFrame()
+        self.notifications_panel.setObjectName("Panel")
+        notifications_layout = QVBoxLayout(self.notifications_panel)
+        notifications_layout.setContentsMargins(18, 18, 18, 18)
+        notifications_layout.setSpacing(14)
+
+        self.notifications_title = QLabel()
+        self.notifications_title.setObjectName("SectionTitle")
+
+        self.notify_correction_checkbox = QCheckBox()
+        self.notify_minimize_checkbox = QCheckBox()
+
+        notifications_layout.addWidget(self.notifications_title)
+        notifications_layout.addWidget(self.notify_correction_checkbox)
+        notifications_layout.addWidget(self.notify_minimize_checkbox)
 
         # Panel Shortcut
         self.shortcut_panel = QFrame()
@@ -263,6 +279,7 @@ class SettingsPage(QWidget):
         self.shortcut_label = QLabel()
         self.shortcut_edit = LiveHotkeyEdit(self.on_shortcut_changed)
         shortcut_row.addWidget(self.shortcut_label)
+        shortcut_row.addStretch()
         shortcut_row.addWidget(self.shortcut_edit)
 
         self.shortcut_hint = QLabel()
@@ -277,6 +294,7 @@ class SettingsPage(QWidget):
         layout.addWidget(self.subtitle_label)
         layout.addWidget(self.general_panel)
         layout.addWidget(self.mic_panel)
+        layout.addWidget(self.notifications_panel)
         layout.addWidget(self.shortcut_panel)
         layout.addStretch()
 
@@ -288,30 +306,14 @@ class SettingsPage(QWidget):
         self.startup_checkbox.stateChanged.connect(self.on_startup_changed)
         self.interval_combo.currentIndexChanged.connect(self.on_interval_changed)
         self.custom_interval_spin.valueChanged.connect(self.on_custom_interval_changed)
+        self.notify_correction_checkbox.stateChanged.connect(self.on_notify_correction_changed)
+        self.notify_minimize_checkbox.stateChanged.connect(self.on_notify_minimize_changed)
         # shortcut_edit uses callback directly, no signal needed here
 
         self.context.state_changed.connect(self.refresh)
         self.refresh()
 
-    def resizeEvent(self, event) -> None:
-        super().resizeEvent(event)
-        self._position_toast()
 
-    def _position_toast(self) -> None:
-        if not self.toast_label.isHidden():
-            self.toast_label.adjustSize()
-        margin = 20
-        x = max(margin, self.width() - self.toast_label.width() - margin)
-        y = margin
-        self.toast_label.move(x, y)
-
-    def show_toast(self, message: str) -> None:
-        self.toast_label.setText(message)
-        self.toast_label.adjustSize()
-        self._position_toast()
-        self.toast_label.show()
-        self.toast_label.raise_()
-        self.toast_timer.start(2200)
 
     # Human-readable display names for language codes
     _LANG_DISPLAY_NAMES = {
@@ -380,6 +382,14 @@ class SettingsPage(QWidget):
 
         self.shortcut_edit.set_sequence(self.service.get_mouse_lock_hotkey())
 
+        self.notify_correction_checkbox.blockSignals(True)
+        self.notify_correction_checkbox.setChecked(self.service.get_notify_on_correction())
+        self.notify_correction_checkbox.blockSignals(False)
+
+        self.notify_minimize_checkbox.blockSignals(True)
+        self.notify_minimize_checkbox.setChecked(self.service.get_notify_on_minimize())
+        self.notify_minimize_checkbox.blockSignals(False)
+
     def on_language_changed(self, index: int) -> None:
         lang = self.lang_combo.currentData()
         if lang:
@@ -430,6 +440,18 @@ class SettingsPage(QWidget):
             self.context.notify_state_changed()
             self.show_toast(t("settings.toast_shortcut_saved", shortcut=sequence))
 
+    def on_notify_correction_changed(self, state: int) -> None:
+        enabled = self.notify_correction_checkbox.isChecked()
+        self.service.set_notify_on_correction(enabled)
+        self.context.notify_state_changed()
+        self.show_toast(t("settings.toast_saved"))
+
+    def on_notify_minimize_changed(self, state: int) -> None:
+        enabled = self.notify_minimize_checkbox.isChecked()
+        self.service.set_notify_on_minimize(enabled)
+        self.context.notify_state_changed()
+        self.show_toast(t("settings.toast_saved"))
+
     def refresh(self) -> None:
         # Update text labels to support active language
         self.title_label.setText(t("settings.page_title"))
@@ -455,3 +477,7 @@ class SettingsPage(QWidget):
         self.shortcut_title.setText(t("settings.section_shortcut"))
         self.shortcut_label.setText(t("settings.shortcut_label"))
         self.shortcut_hint.setText(t("settings.shortcut_hint"))
+
+        self.notifications_title.setText(t("settings.section_notifications"))
+        self.notify_correction_checkbox.setText(t("settings.notify_on_correction_checkbox"))
+        self.notify_minimize_checkbox.setText(t("settings.notify_on_minimize_checkbox"))

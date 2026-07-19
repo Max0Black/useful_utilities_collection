@@ -37,6 +37,8 @@ class TestSettingsService(unittest.TestCase):
         self.assertTrue(service.get_close_to_tray())
         self.assertEqual(service.get_guard_interval(), 1500)
         self.assertEqual(service.get_mouse_lock_hotkey(), "Shift+Alt+M")
+        self.assertTrue(service.get_notify_on_correction())
+        self.assertTrue(service.get_notify_on_minimize())
 
     def test_get_set_language(self):
         service = SettingsService()
@@ -62,17 +64,39 @@ class TestSettingsService(unittest.TestCase):
         self.assertEqual(service.get_mouse_lock_hotkey(), "Ctrl+Alt+X")
         self.assertEqual(self.mock_settings_data["input_lock/mouse_lock_hotkey"], "Ctrl+Alt+X")
 
+    def test_get_set_notify_on_correction(self):
+        service = SettingsService()
+        service.set_notify_on_correction(False)
+        self.assertFalse(service.get_notify_on_correction())
+        self.assertEqual(self.mock_settings_data["notifications/notify_on_correction"], False)
+
+    def test_get_set_notify_on_minimize(self):
+        service = SettingsService()
+        service.set_notify_on_minimize(False)
+        self.assertFalse(service.get_notify_on_minimize())
+        self.assertEqual(self.mock_settings_data["notifications/notify_on_minimize"], False)
+
     @patch('sys.platform', 'win32')
     @patch('winreg.CloseKey')
     @patch('winreg.OpenKey')
     @patch('winreg.QueryValueEx')
-    def test_is_startup_enabled_win32(self, mock_query, mock_open, mock_close):
+    @patch('os.path.exists')
+    def test_is_startup_enabled_win32(self, mock_exists, mock_query, mock_open, mock_close):
         # Mock winreg behavior for win32
         mock_query.return_value = ("some_cmd", 1)
+        mock_exists.return_value = False
         service = SettingsService()
         self.assertTrue(service.is_startup_enabled())
         mock_open.assert_called_once()
         mock_close.assert_called_once()
+
+    @patch('sys.platform', 'win32')
+    @patch('winreg.OpenKey', side_effect=WindowsError)
+    @patch('os.path.exists')
+    def test_is_startup_enabled_win32_shortcut_fallback(self, mock_exists, mock_open):
+        mock_exists.return_value = True
+        service = SettingsService()
+        self.assertTrue(service.is_startup_enabled())
 
     @patch('sys.platform', 'linux')
     def test_is_startup_enabled_non_win32(self):

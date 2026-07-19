@@ -10,8 +10,8 @@
 
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 0, 1, 0),
-    prodvers=(1, 0, 1, 0),
+    filevers=(1, 0, 2, 0),
+    prodvers=(1, 0, 2, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -27,12 +27,12 @@ VSVersionInfo(
           [
             StringStruct(u'CompanyName', u'Max0Black'),
             StringStruct(u'FileDescription', u'Useful Utilities Collection – System Tools'),
-            StringStruct(u'FileVersion', u'1.0.1.0'),
+            StringStruct(u'FileVersion', u'1.0.2.0'),
             StringStruct(u'InternalName', u'UUC'),
             StringStruct(u'LegalCopyright', u'© 2026 Max0Black'),
             StringStruct(u'OriginalFilename', u'UUC.exe'),
             StringStruct(u'ProductName', u'Useful Utilities Collection'),
-            StringStruct(u'ProductVersion', u'1.0.1.0'),
+            StringStruct(u'ProductVersion', u'1.0.2.0'),
           ]
         )
       ]

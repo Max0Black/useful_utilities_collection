@@ -47,12 +47,14 @@ class MicrophoneGuardService:
         self._cached_devices: list[MicrophoneDevice] = []
         
         # Legacy fields for backward compatibility and tests
-        self._target_level: int = int(
+        self._legacy_target_level: int = int(
             self._settings.value("microphone_guard/target_level", 80)
         )
-        self._auto_restore: bool = self._to_bool(
+        self._legacy_auto_restore: bool = self._to_bool(
             self._settings.value("microphone_guard/auto_restore", True)
         )
+        self._target_level = self._legacy_target_level
+        self._auto_restore = self._legacy_auto_restore
         
         # Initial scan to populate cache
         self.list_devices()
@@ -84,7 +86,9 @@ class MicrophoneGuardService:
 
         try:
             pycaw_devices = AudioUtilities.GetAllDevices(EDataFlow.eCapture.value, DEVICE_STATE.ACTIVE.value)
+            from PySide6.QtCore import QCoreApplication
             for pycaw_dev in pycaw_devices:
+                QCoreApplication.processEvents()
                 device_id = pycaw_dev.id
                 display_name = pycaw_dev.FriendlyName or "Microphone"
                 is_default = (device_id == default_id) if default_id else False
@@ -93,8 +97,8 @@ class MicrophoneGuardService:
                 prefix = self._device_settings_prefix(device_id)
                 
                 # Load settings, fallback to legacy settings, then to hard defaults
-                legacy_target = self._target_level
-                legacy_restore = self._auto_restore
+                legacy_target = self._legacy_target_level if is_default else 80
+                legacy_restore = self._legacy_auto_restore if is_default else True
                 
                 target_level = int(self._settings.value(f"{prefix}/target_level", legacy_target))
                 default_guard_state = True if is_default else False
@@ -185,16 +189,22 @@ class MicrophoneGuardService:
 
     def set_target_level(self, device_id: str, level: int) -> None:
         level = max(0, min(100, level))
-        self._target_level = level
         # Handle legacy / default-capture mapping
+        is_default_id = False
         if device_id == "default-capture":
             target = self.refresh_selected_device_state()
             device_id = target.device_id if target else "default-capture"
+            is_default_id = True
             
         prefix = self._device_settings_prefix(device_id)
         self._settings.setValue(f"{prefix}/target_level", level)
-        # Keep legacy setting updated for backward compatibility
-        self._settings.setValue("microphone_guard/target_level", level)
+        
+        # Check if this device is default to update legacy setting
+        default_device = self.get_device("default-capture")
+        if is_default_id or (default_device and default_device.device_id == device_id):
+            self._settings.setValue("microphone_guard/target_level", level)
+            self._target_level = level
+            
         self._settings.sync()
         for d in self._cached_devices:
             if d.device_id == device_id:
@@ -226,14 +236,21 @@ class MicrophoneGuardService:
         return bool(device.guard_enabled) if device else False
 
     def set_auto_restore(self, device_id: str, enabled: bool) -> None:
-        self._auto_restore = enabled
+        is_default_id = False
         if device_id == "default-capture":
             target = self.refresh_selected_device_state()
             device_id = target.device_id if target else "default-capture"
+            is_default_id = True
             
         prefix = self._device_settings_prefix(device_id)
         self._settings.setValue(f"{prefix}/auto_restore", enabled)
-        self._settings.setValue("microphone_guard/auto_restore", enabled)
+        
+        # Check if this device is default to update legacy setting
+        default_device = self.get_device("default-capture")
+        if is_default_id or (default_device and default_device.device_id == device_id):
+            self._settings.setValue("microphone_guard/auto_restore", enabled)
+            self._auto_restore = enabled
+            
         self._settings.sync()
         for d in self._cached_devices:
             if d.device_id == device_id:
@@ -397,8 +414,8 @@ class MicrophoneGuardService:
             pass
 
         prefix = self._device_settings_prefix(default_id)
-        legacy_target = self._target_level
-        legacy_restore = self._auto_restore
+        legacy_target = self._legacy_target_level
+        legacy_restore = self._legacy_auto_restore
 
         target_level = int(self._settings.value(f"{prefix}/target_level", legacy_target))
         guard_enabled = self._to_bool(self._settings.value(f"{prefix}/guard_enabled", True))

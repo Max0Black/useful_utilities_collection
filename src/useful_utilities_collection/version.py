@@ -1,7 +1,7 @@
 # ── Release metadata (edit before every build) ─────────────────────────────
 
-__version__      = "1.0.1"      
-__version_tuple__ = (1, 0, 1, 0)
+__version__      = "1.0.2"      
+__version_tuple__ = (1, 0, 2, 0)
 
 __author__       = "Max0Black"
 __company__      = "Max0Black"

@@ -86,7 +86,9 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
         self.stack.setObjectName("ContentStack")
 
+        from PySide6.QtWidgets import QApplication
         for index, module in enumerate(self.modules):
+            QApplication.processEvents()
             button = QPushButton(module.title)
             button.setCheckable(True)
             button.clicked.connect(lambda checked=False, i=index: self.switch_page(i))
@@ -229,31 +231,39 @@ class MainWindow(QMainWindow):
             if hasattr(self, "tray_icon"):
                 self.tray_icon.hide()
             event.accept()
-        else:
-            guard_active = self.context.microphone_guard_service._guard_enabled
-            if guard_active:
-                reply = QMessageBox.question(
-                    self,
-                    t("app.confirm_exit_title"),
-                    t("app.confirm_exit_body"),
-                    QMessageBox.Yes | QMessageBox.No,
-                    QMessageBox.No
-                )
-                if reply == QMessageBox.Yes:
-                    self.exit_app()
-                    event.accept()
-                else:
-                    event.ignore()
+            return
+
+        close_to_tray = self.context.settings_service.get_close_to_tray()
+        guard_active = self.context.microphone_guard_service._guard_enabled
+
+        if guard_active:
+            reply = QMessageBox.question(
+                self,
+                t("app.confirm_exit_title"),
+                t("app.confirm_exit_body"),
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                self.exit_app()
+                event.accept()
             else:
+                event.ignore()
+        else:
+            if close_to_tray:
                 event.ignore()
                 self.hide()
                 if hasattr(self, "tray_icon") and self.tray_icon.isVisible():
-                    self.tray_icon.showMessage(
-                        t("app.tray_message_title"),
-                        t("app.tray_message_body"),
-                        QSystemTrayIcon.Information,
-                        3000
-                    )
+                    if self.context.settings_service.get_notify_on_minimize():
+                        self.tray_icon.showMessage(
+                            t("app.tray_message_title"),
+                            t("app.tray_message_body"),
+                            QSystemTrayIcon.Information,
+                            3000
+                        )
+            else:
+                self.exit_app()
+                event.accept()
 
     def changeEvent(self, event: QEvent) -> None:
         if event.type() == QEvent.WindowStateChange:
@@ -265,10 +275,11 @@ class MainWindow(QMainWindow):
                         self.context.input_lock_service.unlock()
 
                     if hasattr(self, "tray_icon") and self.tray_icon.isVisible():
-                        self.tray_icon.showMessage(
-                            t("app.tray_message_title"),
-                            t("app.tray_message_body"),
-                            QSystemTrayIcon.Information,
-                            3000
-                        )
+                        if self.context.settings_service.get_notify_on_minimize():
+                            self.tray_icon.showMessage(
+                                t("app.tray_message_title"),
+                                t("app.tray_message_body"),
+                                QSystemTrayIcon.Information,
+                                3000
+                            )
         super().changeEvent(event)
