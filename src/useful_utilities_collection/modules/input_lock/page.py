@@ -115,7 +115,6 @@ class InputLockPage(QWidget):
 
         root.addWidget(self.title_label)
         root.addWidget(self.subtitle_label)
-        root.addWidget(self.toast_label)
         root.addWidget(self.overview_panel)
         root.addLayout(panels)
         root.addStretch()
@@ -133,9 +132,24 @@ class InputLockPage(QWidget):
         panel.setObjectName("Panel")
         return panel
 
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._position_toast()
+
+    def _position_toast(self) -> None:
+        if not self.toast_label.isHidden():
+            self.toast_label.adjustSize()
+        margin = 20
+        x = max(margin, self.width() - self.toast_label.width() - margin)
+        y = margin
+        self.toast_label.move(x, y)
+
     def show_toast(self, message: str) -> None:
         self.toast_label.setText(message)
+        self.toast_label.adjustSize()
+        self._position_toast()
         self.toast_label.show()
+        self.toast_label.raise_()
         self.toast_timer.start(2200)
 
     def on_mouse_enforce_tick(self) -> None:

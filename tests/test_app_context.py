@@ -26,12 +26,15 @@ class TestAppContext(unittest.TestCase):
         mock_settings_inst = mock_settings.return_value
         mock_settings_inst.get_language.return_value = "de"
         
+        # Setup mic service mock
+        mock_mic_service.return_value._guard_enabled = False
+        
         context = AppContext()
         
         # Verify app state is initialized
         self.assertIsInstance(context.state, AppState)
-        self.assertFalse(context.state.keyboard_locked)
-        self.assertEqual(context.state.keyboard_mode, "Unlocked")
+        self.assertIsNone(context.state.selected_microphone_id)
+        self.assertFalse(context.state.microphone_guard_active)
         
         # Verify dependencies were instantiated and called
         mock_settings.assert_called_once()

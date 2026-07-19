@@ -86,7 +86,9 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
         self.stack.setObjectName("ContentStack")
 
+        from PySide6.QtWidgets import QApplication
         for index, module in enumerate(self.modules):
+            QApplication.processEvents()
             button = QPushButton(module.title)
             button.setCheckable(True)
             button.clicked.connect(lambda checked=False, i=index: self.switch_page(i))
@@ -248,12 +250,13 @@ class MainWindow(QMainWindow):
                 event.ignore()
                 self.hide()
                 if hasattr(self, "tray_icon") and self.tray_icon.isVisible():
-                    self.tray_icon.showMessage(
-                        t("app.tray_message_title"),
-                        t("app.tray_message_body"),
-                        QSystemTrayIcon.Information,
-                        3000
-                    )
+                    if self.context.settings_service.get_notify_on_minimize():
+                        self.tray_icon.showMessage(
+                            t("app.tray_message_title"),
+                            t("app.tray_message_body"),
+                            QSystemTrayIcon.Information,
+                            3000
+                        )
 
     def changeEvent(self, event: QEvent) -> None:
         if event.type() == QEvent.WindowStateChange:
@@ -265,10 +268,11 @@ class MainWindow(QMainWindow):
                         self.context.input_lock_service.unlock()
 
                     if hasattr(self, "tray_icon") and self.tray_icon.isVisible():
-                        self.tray_icon.showMessage(
-                            t("app.tray_message_title"),
-                            t("app.tray_message_body"),
-                            QSystemTrayIcon.Information,
-                            3000
-                        )
+                        if self.context.settings_service.get_notify_on_minimize():
+                            self.tray_icon.showMessage(
+                                t("app.tray_message_title"),
+                                t("app.tray_message_body"),
+                                QSystemTrayIcon.Information,
+                                3000
+                            )
         super().changeEvent(event)

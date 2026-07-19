@@ -417,9 +417,10 @@ class MicrophoneGuardPage(QWidget):
                 )
 
             self.show_toast(message)
-            self.context.notification_requested.emit(
-                t("microphone_guard.notification_title"), message
-            )
+            if self.context.settings_service.get_notify_on_correction():
+                self.context.notification_requested.emit(
+                    t("microphone_guard.notification_title"), message
+                )
 
     # ─────────────────────────────────────────────────────────────────
     # Refresh

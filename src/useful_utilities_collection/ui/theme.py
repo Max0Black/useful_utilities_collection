@@ -328,11 +328,11 @@ QPushButton#SmallSecondaryButton:hover {
 }
 
 /* ── Form controls ─────────────────────────────────────────── */
-QComboBox, QCheckBox, QProgressBar, QSlider {
+QComboBox, QDoubleSpinBox, QCheckBox, QProgressBar, QSlider {
     font-size: 10pt;
 }
 
-QComboBox {
+QComboBox, QDoubleSpinBox {
     background: #1a2030;
     border: 1px solid #2d333b;
     border-radius: 8px;
@@ -341,7 +341,7 @@ QComboBox {
     min-width: 160px;
 }
 
-QComboBox:hover {
+QComboBox:hover, QDoubleSpinBox:hover {
     border-color: #3a4552;
 }
 
@@ -355,6 +355,16 @@ QComboBox QAbstractItemView {
     border-radius: 8px;
     color: #e6edf3;
     selection-background-color: #1f6feb;
+}
+
+QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
+    background: transparent;
+    border: none;
+    width: 20px;
+}
+
+QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
+    background: #252b36;
 }
 
 QCheckBox {
