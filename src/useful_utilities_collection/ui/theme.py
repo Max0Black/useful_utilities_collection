@@ -75,6 +75,32 @@ QStackedWidget#ContentStack {
     border-radius: 18px;
 }
 
+/* ── Scrollable pages (prevent clipping on small windows) ── */
+QScrollArea#PageScroll {
+    background: transparent;
+    border: none;
+}
+
+QScrollArea#PageScroll > QWidget > QWidget {
+    background: transparent;
+}
+
+QScrollArea#PageScroll QScrollBar:vertical {
+    background: COLOR_BG_ROOT_STACK;
+    width: 10px;
+    border-radius: 5px;
+}
+
+QScrollArea#PageScroll QScrollBar::handle:vertical {
+    background: COLOR_BORDER_PANEL_SIDEBAR_CTRL;
+    border-radius: 5px;
+    min-height: 24px;
+}
+
+QScrollArea#PageScroll QScrollBar::handle:vertical:hover {
+    background: COLOR_BORDER_BTN_HOVER;
+}
+
 /* ── Scroll areas – must be fully transparent so dark theme shows ── */
 QScrollArea#MicGuardScroll {
     background: transparent;
@@ -476,6 +502,101 @@ QLabel#ActiveGuardLabel {
     font-size: 10pt;
     background: transparent;
 }
+
+/* ── About page ──────────────────────────────────────── */
+QLabel#AboutVersionBadge {
+    background: COLOR_BG_INPUT_CONTROL;
+    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
+    color: COLOR_TEXT_MUTED_LIGHT;
+    font-weight: 600;
+    font-size: 9pt;
+    padding: 3px 10px;
+    border-radius: 8px;
+}
+
+QFrame#AboutOssCard {
+    background: COLOR_BG_GUARD_BADGE;
+    border: 1px solid COLOR_BORDER_MIC_TAG_ACTIVE;
+    border-radius: 14px;
+}
+
+QLabel#AboutOssTitle {
+    color: COLOR_SUCCESS;
+    font-size: 12pt;
+    font-weight: 700;
+    background: transparent;
+}
+
+QLabel#AboutOssIcon {
+    font-size: 13pt;
+    background: transparent;
+}
+
+QLabel#AboutFieldLabel {
+    color: COLOR_TEXT_MUTED_LIGHT;
+    font-size: 10pt;
+    background: transparent;
+}
+
+QLabel#AboutFieldValue {
+    color: COLOR_TEXT_MAIN;
+    font-size: 10pt;
+    font-weight: 600;
+    background: transparent;
+}
+
+QLabel#AboutCopyright {
+    color: COLOR_TEXT_MUTED_LIGHT;
+    font-size: 8pt;
+    background: transparent;
+}
+
+/* ── Sidebar bottom group (Settings / About) ─────────── */
+QFrame#SidebarGroupSeparator {
+    background: COLOR_BORDER_STACK;
+    max-height: 1px;
+    margin: 6px 8px;
+}
+
+QFrame#SidebarInnerSeparator {
+    background: COLOR_BORDER_STACK;
+    max-height: 1px;
+    margin: 2px 12px;
+}
+
+QPushButton#SidebarIconButton {
+    background: COLOR_BG_PANEL_SIDEBAR_BTN;
+    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
+    border-radius: 12px;
+    padding: 12px 16px;
+    text-align: left;
+    color: COLOR_TEXT_MAIN;
+    font-size: 10pt;
+}
+
+QPushButton#SidebarIconButton:hover {
+    background: COLOR_BG_INPUT_CONTROL;
+}
+
+QPushButton#SidebarIconButton:checked {
+    background: COLOR_PRIMARY;
+    color: COLOR_TEXT_WHITE;
+}
+
+/* ── App footer ──────────────────────────────────────── */
+QFrame#AppFooter {
+    background: transparent;
+    border: none;
+    border-top: 1px solid COLOR_BORDER_STACK;
+}
+
+/* ── Guard exit confirmation dialog ────────────────────── */
+QDialog#GuardExitDialog {
+    background: COLOR_BG_PANEL_SIDEBAR_BTN;
+    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
+    border-radius: 16px;
+}
+
 """
 
 def generate_style() -> str:
