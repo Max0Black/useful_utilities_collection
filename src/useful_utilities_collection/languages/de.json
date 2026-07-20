@@ -9,10 +9,14 @@
     "tray_menu_exit": "Beenden",
     "confirm_exit_title": "Wirklich beenden?",
     "confirm_exit_body": "Der Mikrofon-Guard ist gerade aktiv. Wenn du die App schließt, wird das Mikrofon nicht mehr überwacht. Trotzdem beenden?",
+    "confirm_exit_quit": "Trotzdem beenden",
+    "confirm_exit_cancel": "Aktiv bleiben",
     "guard_active_startup_title": "Guard ist aktiv!",
     "guard_active_startup_body": "Dein Mikrofon wird automatisch auf den Zielwert gehalten.",
     "instance_already_running": "UUC läuft schon – das Fenster wird geöffnet.",
-    "starting": "Startet..."
+    "starting": "Startet...",
+    "alt_f4_terminated_title": "Programm beendet",
+    "alt_f4_terminated_body": "Die Anwendung wurde direkt geschlossen und läuft nicht mehr im Hintergrund."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -143,5 +147,24 @@
     "toast_startup_disabled": "Autostart deaktiviert.",
     "shortcut_placeholder": "Klicken zum Aufnehmen...",
     "shortcut_recording": "⏺ Tasten drücken..."
+  },
+  "about": {
+    "title": "Mehr zur App",
+    "page_title": "Mehr zur App",
+    "page_subtitle": "Wer steckt dahinter, wann wurde es gebaut und unter welcher Lizenz läuft die App – hier findest du alle Infos auf einem Blick.",
+    "version_badge": "v{version}",
+    "oss_title": "Open Source · Mach einfach, was du willst",
+    "oss_body": "Der komplette Code ist offen einsehbar und liegt unter der MIT-Lizenz. Du darfst ihn also frei nutzen, kopieren und für dich umbauen.",
+    "github_button": "Code auf GitHub ansehen",
+    "section_build_info": "Build-Details",
+    "field_author": "Ersteller*in:",
+    "field_build_time": "Gebaut am:",
+    "field_build_source": "Art des Builds:",
+    "field_license": "Lizenz:",
+    "field_internal_name": "Interner Name:",
+    "field_original_filename": "Dateiname:",
+    "field_python": "Python:",
+    "field_platform": "Plattform:",
+    "copyright": "{copyright}"
   }
 }

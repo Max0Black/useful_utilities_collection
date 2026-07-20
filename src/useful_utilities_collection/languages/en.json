@@ -9,10 +9,14 @@
     "tray_menu_exit": "Quit",
     "confirm_exit_title": "Really quit?",
     "confirm_exit_body": "The Mic Guard is currently active. Your microphone won't be watched anymore if you close. Quit anyway?",
+    "confirm_exit_quit": "Quit anyway",
+    "confirm_exit_cancel": "Stay active",
     "guard_active_startup_title": "Guard is on!",
     "guard_active_startup_body": "Your microphone volume is being kept at the target level.",
     "instance_already_running": "UUC is already running — bringing it to the front.",
-    "starting": "Starting..."
+    "starting": "Starting...",
+    "alt_f4_terminated_title": "Program terminated",
+    "alt_f4_terminated_body": "The application was closed directly and is no longer running in the background."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -143,5 +147,24 @@
     "toast_startup_disabled": "Auto-start disabled.",
     "shortcut_placeholder": "Click to record...",
     "shortcut_recording": "⏺ Press keys..."
+  },
+  "about": {
+    "title": "About",
+    "page_title": "About",
+    "page_subtitle": "Here you'll find all the build and license details for this app.",
+    "version_badge": "v{version}",
+    "oss_title": "Open Source · Do whatever you like",
+    "oss_body": "This app is open source and released under the MIT license. Feel free to read the code, fork it, and tweak it to your needs.",
+    "github_button": "View code on GitHub",
+    "section_build_info": "Build details",
+    "field_author": "Author:",
+    "field_build_time": "Built on:",
+    "field_build_source": "Build type:",
+    "field_license": "License:",
+    "field_internal_name": "Internal name:",
+    "field_original_filename": "File name:",
+    "field_python": "Python:",
+    "field_platform": "Platform:",
+    "copyright": "{copyright}"
   }
 }

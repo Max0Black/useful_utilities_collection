@@ -2,6 +2,7 @@ from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QAction, QCloseEvent, QGuiApplication, QIcon, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
+    QDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -9,6 +10,7 @@ from PySide6.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
+    QSizePolicy,
     QStackedWidget,
     QSystemTrayIcon,
     QVBoxLayout,
@@ -21,6 +23,8 @@ from useful_utilities_collection.modules.dashboard.module import create_module a
 from useful_utilities_collection.modules.input_lock.module import create_module as create_input_lock_module
 from useful_utilities_collection.modules.microphone_guard.module import create_module as create_microphone_guard_module
 from useful_utilities_collection.modules.settings.module import create_module as create_settings_module
+from useful_utilities_collection.modules.about.module import create_module as create_about_module
+from useful_utilities_collection.ui.guard_exit_dialog import GuardExitDialog
 
 
 class MainWindow(QMainWindow):
@@ -34,6 +38,7 @@ class MainWindow(QMainWindow):
             create_input_lock_module(),
             create_microphone_guard_module(),
             create_settings_module(),
+            create_about_module(),
         ]
         self.nav_buttons: list[QPushButton] = []
 
@@ -41,7 +46,7 @@ class MainWindow(QMainWindow):
         self.resize(1200, 820)
         # Prevent Qt from auto-resizing when child widgets change their size hints.
         # The user's chosen window size must always be respected.
-        self.setMinimumSize(640, 480)
+        self.setMinimumSize(760, 540)
         from PySide6.QtWidgets import QSizePolicy as _SP
         self.setSizePolicy(_SP.Ignored, _SP.Ignored)
 
@@ -49,8 +54,12 @@ class MainWindow(QMainWindow):
         root.setObjectName("AppRoot")
         self.setCentralWidget(root)
 
-        layout = QHBoxLayout(root)
-        layout.setContentsMargins(16, 16, 16, 16)
+        root_layout = QVBoxLayout(root)
+        root_layout.setContentsMargins(16, 16, 16, 16)
+        root_layout.setSpacing(12)
+
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(16)
 
         sidebar = QWidget()
@@ -86,22 +95,67 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
         self.stack.setObjectName("ContentStack")
 
-        from PySide6.QtWidgets import QApplication
+        self.pages: list = []
+        from PySide6.QtWidgets import QApplication, QScrollArea
+        self.about_index = None
+        self.settings_index = None
+
+        _ICON_MAP = {
+            "dashboard": "📊",
+            "input_lock": "🔒",
+            "microphone_guard": "🎙",
+            "settings": "⚙",
+            "about": "ℹ",
+        }
+
+        main_buttons = []
+        bottom_buttons = []
         for index, module in enumerate(self.modules):
             QApplication.processEvents()
-            button = QPushButton(module.title)
-            button.setCheckable(True)
+            page = module.page_factory(self.context)
+            self.pages.append(page)
+
+            scroll = QScrollArea()
+            scroll.setObjectName("PageScroll")
+            scroll.setWidgetResizable(True)
+            scroll.setWidget(page)
+            self.stack.addWidget(scroll)
+
+            icon_text = _ICON_MAP.get(module.module_id, "")
+            text = t(f"{module.module_id}.title")
+            button = self._create_sidebar_icon_button(icon_text, text)
             button.clicked.connect(lambda checked=False, i=index: self.switch_page(i))
             self.nav_buttons.append(button)
-            sidebar_layout.addWidget(button)
 
-            page = module.page_factory(self.context)
-            self.stack.addWidget(page)
+            if module.module_id in ("settings", "about"):
+                if module.module_id == "about":
+                    self.about_index = index
+                elif module.module_id == "settings":
+                    self.settings_index = index
+                bottom_buttons.append(button)
+            else:
+                main_buttons.append(button)
+
+        for btn in main_buttons:
+            sidebar_layout.addWidget(btn)
 
         sidebar_layout.addStretch()
 
+        sidebar_sep = QFrame()
+        sidebar_sep.setObjectName("SidebarGroupSeparator")
+        sidebar_layout.addWidget(sidebar_sep)
+
+        for idx, btn in enumerate(bottom_buttons):
+            sidebar_layout.addWidget(btn)
+            if idx < len(bottom_buttons) - 1:
+                sep = QFrame()
+                sep.setObjectName("SidebarInnerSeparator")
+                sidebar_layout.addWidget(sep)
+
         layout.addWidget(sidebar, 0)
         layout.addWidget(self.stack, 1)
+
+        root_layout.addLayout(layout)
 
         # Setup System Tray
         self._setup_tray_icon()
@@ -118,9 +172,10 @@ class MainWindow(QMainWindow):
         self.retranslate_ui()
         self._update_guard_indicator()
 
-        # Alt+F4 shortcut to directly quit and bypass everything
+        # Alt+F4 shortcut: show notification then exit
+        self._alt_f4_forced = False
         self.alt_f4_shortcut = QShortcut(QKeySequence("Alt+F4"), self)
-        self.alt_f4_shortcut.activated.connect(self.exit_app)
+        self.alt_f4_shortcut.activated.connect(self._alt_f4_activated)
 
         self.switch_page(0)
 
@@ -131,15 +186,19 @@ class MainWindow(QMainWindow):
             button.setChecked(button_index == index)
 
         # Performance fix: Only refresh the currently visible page
-        page = self.stack.widget(index)
-        if hasattr(page, "refresh"):
-            page.refresh()
+        page = self.pages[index] if index < len(self.pages) else None
+        if page is not None:
+            if hasattr(page, "refresh"):
+                page.refresh()
+            # Smooth, cheap fade-in for the newly shown page (no window relayout).
+            if hasattr(page, "fade_in"):
+                page.fade_in()
 
     def refresh_current_page(self) -> None:
         """Refresh only the currently visible page."""
         index = self.stack.currentIndex()
-        page = self.stack.widget(index)
-        if hasattr(page, "refresh"):
+        page = self.pages[index] if index < len(self.pages) else None
+        if page is not None and hasattr(page, "refresh"):
             page.refresh()
 
     def _update_guard_indicator(self) -> None:
@@ -153,6 +212,34 @@ class MainWindow(QMainWindow):
             self.guard_status_text.setText(t("microphone_guard.status_title_inactive"))
         self.style().unpolish(self.guard_dot)
         self.style().polish(self.guard_dot)
+
+    def _create_sidebar_icon_button(self, icon_text: str, text: str) -> QPushButton:
+        button = QPushButton()
+        button.setCheckable(True)
+        button.setObjectName("SidebarIconButton")
+
+        layout = QHBoxLayout(button)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(8)
+
+        icon_label = QLabel(icon_text)
+        icon_label.setAlignment(Qt.AlignCenter)
+        font = icon_label.font()
+        font.setPointSize(16)
+        icon_label.setFont(font)
+        icon_label.setObjectName("SidebarIconLabel")
+        icon_label.setFixedWidth(24)
+
+        text_label = QLabel(text)
+        text_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        text_label.setObjectName("SectionTitle")
+
+        layout.addWidget(icon_label)
+        layout.addWidget(text_label)
+        layout.addStretch()
+
+        button._sidebar_text_label = text_label
+        return button
 
     def _is_german(self) -> bool:
         from useful_utilities_collection.core.translation import get_language
@@ -200,6 +287,17 @@ class MainWindow(QMainWindow):
             self.tray_icon.hide()
         QApplication.quit()
 
+    def _alt_f4_activated(self):
+        if hasattr(self, "tray_icon") and self.tray_icon.isVisible():
+            self.tray_icon.showMessage(
+                t("app.alt_f4_terminated_title"),
+                t("app.alt_f4_terminated_body"),
+                QSystemTrayIcon.Information,
+                3000,
+            )
+        self._allow_exit = True
+        self.close()
+
     def on_commit_data(self, manager) -> None:
         self._allow_exit = True
 
@@ -221,7 +319,12 @@ class MainWindow(QMainWindow):
 
         for index, module in enumerate(self.modules):
             if index < len(self.nav_buttons):
-                self.nav_buttons[index].setText(t(f"{module.module_id}.title"))
+                btn = self.nav_buttons[index]
+                label = getattr(btn, "_sidebar_text_label", None)
+                if label is not None:
+                    label.setText(t(f"{module.module_id}.title"))
+                else:
+                    btn.setText(t(f"{module.module_id}.title"))
 
         self._update_guard_indicator()
 
@@ -237,14 +340,8 @@ class MainWindow(QMainWindow):
         guard_active = self.context.microphone_guard_service._guard_enabled
 
         if guard_active:
-            reply = QMessageBox.question(
-                self,
-                t("app.confirm_exit_title"),
-                t("app.confirm_exit_body"),
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.Yes:
+            dlg = GuardExitDialog(self)
+            if dlg.exec() == QDialog.Accepted:
                 self.exit_app()
                 event.accept()
             else:

@@ -4,12 +4,14 @@ __version__      = "1.0.2"
 __version_tuple__ = (1, 0, 2, 0)
 
 __author__       = "Max0Black"
-__company__      = "Max0Black"
+__company__       = "Max0Black"
 __product_name__ = "Useful Utilities Collection"
 __description__  = "Useful Utilities Collection – System Tools"
 __copyright__    = f"© 2026 {__author__}"
+__license__      = "MIT"
 __exe_name__     = "UUC.exe"
 __internal_name__ = "UUC"
+__repository_url__ = "https://github.com/Max0Black/useful_utilities_collection"
 
 # ── Windows locale for version info (English US + Unicode) ─────────────────
 _LOCALE_ID       = "040904B0"
@@ -49,7 +51,7 @@ VSVersionInfo(
         StringTable(
           u'{_LOCALE_ID}',
           [
-            StringStruct(u'CompanyName', u'{__company__}'),
+            StringStruct(u'CompanyName', u'{__author__}'),
             StringStruct(u'FileDescription', u'{__description__}'),
             StringStruct(u'FileVersion', u'{fv_str}'),
             StringStruct(u'InternalName', u'{__internal_name__}'),
