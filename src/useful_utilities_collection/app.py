@@ -1,3 +1,4 @@
+import math
 import sys
 from pathlib import Path
 
@@ -24,7 +25,7 @@ class AnimatedSplashScreen(QSplashScreen):
         self.setAttribute(Qt.WA_TranslucentBackground)
 
         self.message = message
-        self.angle = 0
+        self.frame = 0
 
         # Load and scale the logo
         self.logo_pixmap = QPixmap(str(fallback_icon_path))
@@ -33,10 +34,10 @@ class AnimatedSplashScreen(QSplashScreen):
                 140, 140, Qt.KeepAspectRatio, Qt.SmoothTransformation
             )
 
-        # Start timer for spinner animation
+        # Start timer for the three-dot loading animation
         self.animation_timer = QTimer(self)
         self.animation_timer.timeout.connect(self.update)
-        self.animation_timer.start(40)  # 25 FPS
+        self.animation_timer.start(420)
 
     def hideEvent(self, event) -> None:
         self.animation_timer.stop()
@@ -58,27 +59,27 @@ class AnimatedSplashScreen(QSplashScreen):
             ly = 35
             painter.drawPixmap(lx, ly, self.logo_pixmap)
 
-        # 3. Draw spinner
+        # 3. Draw three softly pulsing loading dots
         cx = 280 // 2
         cy = 215
 
-        self.angle = (self.angle + 8) % 360
-        painter.save()
-        painter.translate(cx, cy)
-        painter.rotate(self.angle)
+        self.frame = (self.frame + 1) % 3
+        dot_radius = 5
+        spacing = 22
+        for i in range(3):
+            # Offset so the active dot is the one closest to the current frame,
+            # giving a smooth left-to-right travelling pulse.
+            phase = (self.frame - i) % 3
+            # Eased lift: 0 -> peak -> 0 using a sine curve
+            lift = -abs(math.sin((phase / 3.0) * math.pi)) * 7
+            alpha = 140 + int(115 * (1 - phase / 3.0))
 
-        pen = QPen()
-        pen.setWidth(3)
-        pen.setCapStyle(Qt.RoundCap)
-
-        for i in range(8):
-            alpha = int(255 * (i + 1) / 8)
-            # Vibrant light blue accent color
-            pen.setColor(QColor(88, 166, 255, alpha))
-            painter.setPen(pen)
-            painter.drawLine(0, -9, 0, -5)
-            painter.rotate(45)
-        painter.restore()
+            dot_color = QColor(88, 166, 255, alpha)
+            painter.setBrush(QBrush(dot_color))
+            painter.setPen(Qt.NoPen)
+            dx = cx + (i - 1) * spacing
+            painter.drawEllipse(QRectF(dx - dot_radius, cy + lift - dot_radius,
+                                       dot_radius * 2, dot_radius * 2))
 
         # 4. Draw loading message
         if self.message:
@@ -91,13 +92,37 @@ class AnimatedSplashScreen(QSplashScreen):
             painter.drawText(text_rect, Qt.AlignHCenter | Qt.AlignTop, self.message)
 
 
+WINDOWS_APP_ID = "UsefulUtilitiesCollection.DesktopApp.1.0"
+
+
+def _register_toast_compat_id() -> None:
+    if sys.platform != "win32":
+        return
+    try:
+        import winreg
+        key_path = f"Software\\Classes\\AppUserModelId\\{WINDOWS_APP_ID}"
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+            winreg.SetValueEx(key, "DisplayName", 0, winreg.REG_SZ, "Useful Utilities Collection")
+            winreg.SetValueEx(key, "ShowInSettings", 0, winreg.REG_DWORD, 1)
+    except Exception:
+        pass
+
+
+def _resolve_asset(name: str) -> Path:
+    base = Path(getattr(sys, "_MEIPASS", str(Path(__file__).resolve().parent)))
+    candidate = Path(base) / "assets" / name
+    if candidate.exists():
+        return candidate
+    # Fallback to the source tree location (running as a script).
+    return Path(__file__).resolve().parent / "assets" / name
+
+
 def _set_windows_app_id() -> None:
     if sys.platform != "win32":
         return
     try:
         import ctypes
-        app_id = "UsefulUtilitiesCollection"
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(WINDOWS_APP_ID)
     except Exception:
         pass
 
@@ -116,12 +141,13 @@ def _try_focus_existing() -> bool:
 
 
 def run() -> int:
-    _set_windows_app_id()
-
     # --- Single Instance Check ---
     app = QApplication(sys.argv)
     app.setApplicationName("Useful Utilities Collection")
     app.setStyleSheet(APP_STYLE)
+
+    _set_windows_app_id()
+    _register_toast_compat_id()
 
     if _try_focus_existing():
         # Another instance is running — signal it and exit
@@ -140,16 +166,14 @@ def run() -> int:
         lang = str(settings.value("general/language", "en"))
         set_language(lang)
 
-        assets_dir = Path(__file__).resolve().parent / "assets"
-        fallback_icon_path = assets_dir / "icon.png"
-        
+        fallback_icon_path = _resolve_asset("icon.png")
+
         splash = AnimatedSplashScreen(fallback_icon_path, t("app.starting"))
         splash.show()
         app.processEvents()
 
-    assets_dir = Path(__file__).resolve().parent / "assets"
-    windows_icon_path = assets_dir / "icon.ico"
-    fallback_icon_path = assets_dir / "icon.png"
+    windows_icon_path = _resolve_asset("icon.ico")
+    fallback_icon_path = _resolve_asset("icon.png")
 
     icon_path = windows_icon_path if windows_icon_path.exists() else fallback_icon_path
     app_icon = QIcon(str(icon_path))
@@ -189,7 +213,7 @@ def run() -> int:
                 window.tray_icon.showMessage(
                     t("app.guard_active_startup_title"),
                     t("app.guard_active_startup_body"),
-                    QIcon(str(icon_path)),
+                    app_icon,
                     4000,
                 )
         QTimer.singleShot(30000, show_startup_notification)

@@ -246,5 +246,4 @@ class InputLockPage(BasePage):
             self.mouse_button,
         ]
 
-        self.repolish(*widgets)
-        self.setStyleSheet(self.styleSheet())
+        self.repolish(*widgets)

@@ -134,6 +134,9 @@ class MainWindow(QMainWindow):
         page = self.stack.widget(index)
         if hasattr(page, "refresh"):
             page.refresh()
+        # Smooth, cheap fade-in for the newly shown page (no window relayout).
+        if hasattr(page, "fade_in"):
+            page.fade_in()
 
     def refresh_current_page(self) -> None:
         """Refresh only the currently visible page."""

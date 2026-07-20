@@ -1,5 +1,7 @@
-from PySide6.QtWidgets import QLabel, QWidget
-from PySide6.QtCore import QTimer, QEvent, Qt
+from PySide6.QtWidgets import QLabel, QWidget, QGraphicsOpacityEffect
+from PySide6.QtCore import QTimer, QEvent, Qt, QPropertyAnimation, QEasingCurve, Property
+from PySide6.QtGui import QPainter
+
 
 class ToastLabel(QLabel):
     """
@@ -13,9 +15,19 @@ class ToastLabel(QLabel):
         self.setWordWrap(True)
         self.hide()
 
+        # Opacity effect drives a cheap fade that never triggers a relayout.
+        self._opacity = QGraphicsOpacityEffect(self)
+        self._opacity.setOpacity(0.0)
+        self.setGraphicsEffect(self._opacity)
+
+        self._fade = QPropertyAnimation(self._opacity, b"opacity", self)
+        self._fade.setDuration(220)
+        self._fade.setEasingCurve(QEasingCurve.OutCubic)
+        self._fade.finished.connect(self._on_fade_finished)
+
         self.timer = QTimer(self)
         self.timer.setSingleShot(True)
-        self.timer.timeout.connect(self.hide)
+        self.timer.timeout.connect(self._start_hide)
 
         # Install event filter to automatically reposition on parent resize
         if parent:
@@ -27,7 +39,23 @@ class ToastLabel(QLabel):
         self.position_toast()
         self.show()
         self.raise_()
+        self._fade.stop()
+        self._fade.setDirection(QPropertyAnimation.Forward)
+        self._fade.setStartValue(self._opacity.opacity())
+        self._fade.setEndValue(1.0)
+        self._fade.start()
         self.timer.start(duration_ms)
+
+    def _start_hide(self) -> None:
+        self._fade.stop()
+        self._fade.setDirection(QPropertyAnimation.Backward)
+        self._fade.setStartValue(self._opacity.opacity())
+        self._fade.setEndValue(0.0)
+        self._fade.start()
+
+    def _on_fade_finished(self) -> None:
+        if self._opacity.opacity() == 0.0:
+            self.hide()
 
     def position_toast(self) -> None:
         parent = self.parentWidget()
@@ -66,4 +94,17 @@ class BasePage(QWidget):
             self.style().unpolish(widget)
             self.style().polish(widget)
             widget.update()
+
+    def fade_in(self, duration_ms: int = 180) -> None:
+        """Smoothly fade the page in after a page switch (no relayout/repaint storm)."""
+        effect = QGraphicsOpacityEffect(self)
+        effect.setOpacity(0.0)
+        self.setGraphicsEffect(effect)
+        anim = QPropertyAnimation(effect, b"opacity", self)
+        anim.setDuration(duration_ms)
+        anim.setEasingCurve(QEasingCurve.OutCubic)
+        anim.setStartValue(0.0)
+        anim.setEndValue(1.0)
+        anim.finished.connect(lambda: self.setGraphicsEffect(None))
+        anim.start()
 
