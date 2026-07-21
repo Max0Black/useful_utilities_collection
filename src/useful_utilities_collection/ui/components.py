@@ -48,7 +48,7 @@ class ToastLabel(QLabel):
 
     def _start_hide(self) -> None:
         self._fade.stop()
-        self._fade.setDirection(QPropertyAnimation.Backward)
+        self._fade.setDirection(QPropertyAnimation.Forward)
         self._fade.setStartValue(self._opacity.opacity())
         self._fade.setEndValue(0.0)
         self._fade.start()

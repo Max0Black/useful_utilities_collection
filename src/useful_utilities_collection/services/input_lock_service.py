@@ -44,6 +44,9 @@ class InputLockService:
     def mouse_locked(self) -> bool:
         return self.state.mouse_locked()
 
+    def shutdown(self) -> None:
+        self.mouse_lock_service.shutdown()
+
     def _sync_state(self) -> None:
         self.state.set_state(
             self.keyboard_lock_service.is_locked(),

@@ -109,6 +109,14 @@ def _read_pe_timestamp() -> str:
     except Exception:
         pass
 
+    try:
+        mtime = Path(sys.executable).stat().st_mtime
+        return datetime.fromtimestamp(mtime, tz=timezone.utc).strftime(
+            "%Y-%m-%d %H:%M:%S UTC"
+        )
+    except Exception:
+        pass
+
     return "N/A"
 
 
