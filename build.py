@@ -95,6 +95,18 @@ def main() -> None:
     # Auto-generate version_info.txt so the EXE always matches version.py
     _generate_version_info(root_dir, venv_python)
 
+    version_info_path = root_dir / "version_info.txt"
+    if version_info_path.exists():
+        from datetime import datetime, timezone
+        build_ts = datetime.now(timezone.utc).timestamp()
+        filetime = int((build_ts + 11644473600) * 1e7)
+        low = filetime & 0xFFFFFFFF
+        high = (filetime >> 32) & 0xFFFFFFFF
+        content = version_info_path.read_text(encoding="utf-8")
+        content = content.replace("date=(0, 0)", f"date=({low}, {high})")
+        version_info_path.write_text(content, encoding="utf-8")
+        print(f"[Info] Injected build date {datetime.fromtimestamp(build_ts, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')} into version_info.txt.")
+
     try:
         # Run pyinstaller with the spec file using python -m PyInstaller
         print(f"Compiling with command: {venv_python} -m PyInstaller --clean -y {spec_file.name}")
