@@ -218,4 +218,10 @@ def run() -> int:
                 )
         QTimer.singleShot(30000, show_startup_notification)
 
-    return app.exec()
+    exit_code = 0
+    try:
+        exit_code = app.exec()
+    finally:
+        context.input_lock_service.shutdown()
+
+    return exit_code

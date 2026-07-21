@@ -42,6 +42,7 @@ class MouseLockService:
         self._user32 = ctypes.windll.user32
         self._anchor = None
         self._emergency_unlock_requested = False
+        self._register_hotkey()
 
     def lock(self) -> bool:
         if self._locked:
@@ -67,7 +68,6 @@ class MouseLockService:
                 win32_event_filter=self._win32_event_filter,
             )
             self._listener.start()
-            self._register_hotkey()
             self._locked = True
             return True
         except Exception:
@@ -75,13 +75,24 @@ class MouseLockService:
             return False
 
     def unlock(self) -> bool:
-        self._cleanup_hotkey()
         self._cleanup_listener()
         self._release_cursor()
         self._anchor = None
         self._locked = False
         self._emergency_unlock_requested = False
         return True
+
+    def shutdown(self) -> None:
+        try:
+            keyboard.unhook_all()
+        except Exception:
+            pass
+        self._hotkey_handle = None
+        self._cleanup_listener()
+        self._release_cursor()
+        self._anchor = None
+        self._locked = False
+        self._emergency_unlock_requested = False
 
     def is_locked(self) -> bool:
         return self._locked
