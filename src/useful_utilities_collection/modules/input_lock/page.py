@@ -18,10 +18,10 @@ from useful_utilities_collection.ui.components import BasePage
 
 
 _COUNTDOWN_PRESETS = [
-    (300, "min"),
-    (600, "min"),
-    (1800, "min"),
-    ("custom", None),
+    300,
+    600,
+    1800,
+    "custom",
 ]
 
 
@@ -89,8 +89,8 @@ class InputLockPage(BasePage):
 
         self.countdown_preset_combo = QComboBox()
         self.countdown_preset_combo.setMinimumWidth(220)
-        for text, data in _COUNTDOWN_PRESETS:
-            self.countdown_preset_combo.addItem(text, data)
+        for data in _COUNTDOWN_PRESETS:
+            self.countdown_preset_combo.addItem(self._build_preset_label(data), data)
         self.countdown_preset_combo.currentIndexChanged.connect(self._on_preset_changed)
 
         self.countdown_start_button = QPushButton()
@@ -417,7 +417,7 @@ class InputLockPage(BasePage):
         current_data = self.countdown_preset_combo.currentData()
         self.countdown_preset_combo.blockSignals(True)
         self.countdown_preset_combo.clear()
-        for text, data in _COUNTDOWN_PRESETS:
+        for data in _COUNTDOWN_PRESETS:
             self.countdown_preset_combo.addItem(self._build_preset_label(data), data)
         idx = self.countdown_preset_combo.findData(current_data)
         if idx >= 0:
