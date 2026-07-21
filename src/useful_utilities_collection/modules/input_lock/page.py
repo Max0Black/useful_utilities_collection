@@ -18,10 +18,10 @@ from useful_utilities_collection.ui.components import BasePage
 
 
 _COUNTDOWN_PRESETS = [
-    (300, "min"),
-    (600, "min"),
-    (1800, "min"),
-    ("custom", None),
+    30,
+    300,
+    600,
+    "custom",
 ]
 
 
@@ -89,8 +89,8 @@ class InputLockPage(BasePage):
 
         self.countdown_preset_combo = QComboBox()
         self.countdown_preset_combo.setMinimumWidth(220)
-        for text, data in _COUNTDOWN_PRESETS:
-            self.countdown_preset_combo.addItem(text, data)
+        for data in _COUNTDOWN_PRESETS:
+            self.countdown_preset_combo.addItem(self._build_preset_label(data), data)
         self.countdown_preset_combo.currentIndexChanged.connect(self._on_preset_changed)
 
         self.countdown_start_button = QPushButton()
@@ -115,9 +115,6 @@ class InputLockPage(BasePage):
         custom_row.setSpacing(10)
 
         self.countdown_custom_label = QLabel()
-        self.countdown_custom_label.setObjectName("AboutFieldLabel")
-        self.countdown_custom_label.setMinimumWidth(120)
-
         self.countdown_custom_spin = QSpinBox()
         self.countdown_custom_spin.setRange(1, 9999)
         self.countdown_custom_spin.setValue(5)
@@ -133,9 +130,9 @@ class InputLockPage(BasePage):
         self.countdown_unit_combo.setFixedWidth(120)
 
         custom_row.addWidget(self.countdown_custom_label)
+        custom_row.addStretch()
         custom_row.addWidget(self.countdown_custom_spin)
         custom_row.addWidget(self.countdown_unit_combo)
-        custom_row.addStretch()
 
         self.countdown_display_container = QWidget()
         display_row = QHBoxLayout(self.countdown_display_container)
@@ -404,6 +401,7 @@ class InputLockPage(BasePage):
         self.countdown_start_button.setText(t("input_lock.countdown_start"))
         self.countdown_stop_button.setText(t("input_lock.countdown_stop"))
 
+        current_unit_index = self.countdown_unit_combo.currentIndex()
         self.countdown_unit_combo.blockSignals(True)
         self.countdown_unit_combo.clear()
         self.countdown_unit_combo.addItems([
@@ -411,13 +409,14 @@ class InputLockPage(BasePage):
             t("input_lock.countdown_unit_minutes"),
             t("input_lock.countdown_unit_hours"),
         ])
-        self.countdown_unit_combo.setCurrentIndex(1)
+        if 0 <= current_unit_index < self.countdown_unit_combo.count():
+            self.countdown_unit_combo.setCurrentIndex(current_unit_index)
         self.countdown_unit_combo.blockSignals(False)
 
         current_data = self.countdown_preset_combo.currentData()
         self.countdown_preset_combo.blockSignals(True)
         self.countdown_preset_combo.clear()
-        for text, data in _COUNTDOWN_PRESETS:
+        for data in _COUNTDOWN_PRESETS:
             self.countdown_preset_combo.addItem(self._build_preset_label(data), data)
         idx = self.countdown_preset_combo.findData(current_data)
         if idx >= 0:

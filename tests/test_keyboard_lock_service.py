@@ -12,60 +12,61 @@ class TestKeyboardLockService(unittest.TestCase):
     def test_initial_state(self, mock_keyboard):
         service = KeyboardLockService()
         self.assertFalse(service.is_locked())
-        self.assertEqual(service._blocked_keys, [])
+        self.assertEqual(service._allowed_keys, set())
 
     @patch('useful_utilities_collection.services.keyboard_lock_service.keyboard')
     def test_lock_and_unlock(self, mock_keyboard):
         service = KeyboardLockService()
         
         # Lock first time
-        res = service.lock()
+        res = service.lock(allowed_keys={42, 54})
         self.assertTrue(res)
         self.assertTrue(service.is_locked())
-        self.assertEqual(len(service._blocked_keys), 150)
-        self.assertEqual(mock_keyboard.block_key.call_count, 150)
+        mock_keyboard.hook.assert_called_once()
         
         # Lock second time should be no-op
-        mock_keyboard.block_key.reset_mock()
-        res_repeat = service.lock()
+        mock_keyboard.hook.reset_mock()
+        res_repeat = service.lock(allowed_keys={42, 54})
         self.assertTrue(res_repeat)
         self.assertTrue(service.is_locked())
-        mock_keyboard.block_key.assert_not_called()
+        mock_keyboard.hook.assert_not_called()
         
         # Unlock
         res_unlock = service.unlock()
         self.assertTrue(res_unlock)
         self.assertFalse(service.is_locked())
-        self.assertEqual(service._blocked_keys, [])
-        self.assertEqual(mock_keyboard.unblock_key.call_count, 150)
+        mock_keyboard.unhook.assert_called_once()
         
         # Unlock second time should be no-op
-        mock_keyboard.unblock_key.reset_mock()
+        mock_keyboard.unhook.reset_mock()
         res_unlock_repeat = service.unlock()
         self.assertTrue(res_unlock_repeat)
-        mock_keyboard.unblock_key.assert_not_called()
+        mock_keyboard.unhook.assert_not_called()
 
     @patch('useful_utilities_collection.services.keyboard_lock_service.keyboard')
-    def test_lock_with_exceptions(self, mock_keyboard):
-        # block_key raises exception for some keys
-        def side_effect_fn(k):
-            if k % 2 != 0:
-                raise Exception("Forbidden")
-        mock_keyboard.block_key.side_effect = side_effect_fn
-        
+    def test_lock_blocks_non_allowed_keys(self, mock_keyboard):
         service = KeyboardLockService()
-        res = service.lock()
-        self.assertTrue(res)
-        self.assertTrue(service.is_locked())
-        # only even keys should be added (75 keys)
-        self.assertEqual(len(service._blocked_keys), 75)
+        service.lock(allowed_keys={42, 54})
         
-        # Unlocking should only call unblock_key on the successfully blocked keys
-        mock_keyboard.unblock_key.side_effect = Exception("Failed unblock")
-        res_unlock = service.unlock()
-        self.assertTrue(res_unlock)
-        self.assertEqual(mock_keyboard.unblock_key.call_count, 75)
+        # Allowed key event
+        allowed_event = unittest.mock.Mock()
+        allowed_event.scan_code = 42
+        self.assertTrue(service._on_key_event(allowed_event))
+        
+        # Blocked key event
+        blocked_event = unittest.mock.Mock()
+        blocked_event.scan_code = 30
+        self.assertFalse(service._on_key_event(blocked_event))
+
+    @patch('useful_utilities_collection.services.keyboard_lock_service.keyboard')
+    def test_shutdown(self, mock_keyboard):
+        service = KeyboardLockService()
+        service.lock(allowed_keys={42, 54})
+        self.assertTrue(service.is_locked())
+        
+        service.shutdown()
         self.assertFalse(service.is_locked())
+        mock_keyboard.unhook.assert_called_once()
 
 if __name__ == "__main__":
     unittest.main()

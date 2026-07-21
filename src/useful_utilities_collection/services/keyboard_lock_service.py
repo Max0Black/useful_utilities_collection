@@ -4,19 +4,15 @@ import keyboard
 class KeyboardLockService:
     def __init__(self):
         self._locked = False
-        self._blocked_keys: list[int] = []
+        self._hook = None
+        self._allowed_keys: set[int] = set()
 
-    def lock(self) -> bool:
+    def lock(self, allowed_keys: set[int] | None = None) -> bool:
         if self._locked:
             return True
 
-        for key_code in range(150):
-            try:
-                keyboard.block_key(key_code)
-                self._blocked_keys.append(key_code)
-            except Exception:
-                pass
-
+        self._allowed_keys = allowed_keys or set()
+        self._hook = keyboard.hook(self._on_key_event, suppress=True)
         self._locked = True
         return True
 
@@ -24,15 +20,24 @@ class KeyboardLockService:
         if not self._locked:
             return True
 
-        for key_code in self._blocked_keys:
-            try:
-                keyboard.unblock_key(key_code)
-            except Exception:
-                pass
+        if self._hook is not None:
+            keyboard.unhook(self._hook)
+            self._hook = None
 
-        self._blocked_keys.clear()
         self._locked = False
         return True
 
     def is_locked(self) -> bool:
         return self._locked
+
+    def shutdown(self) -> None:
+        self.unlock()
+
+    def _on_key_event(self, event) -> bool:
+        if not self._locked:
+            return False
+
+        if event.scan_code in self._allowed_keys:
+            return True
+
+        return False

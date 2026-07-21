@@ -23,8 +23,8 @@ class InputLockController:
 
     def lock_both(self) -> None:
         service = self.context.input_lock_service
-        service.keyboard_lock_service.lock()
-        service.mouse_lock_service.lock()
+        service.lock_keyboard()
+        service.lock_mouse()
         service._sync_state()
 
     def unlock_both(self) -> None:

@@ -102,8 +102,34 @@ class TestMouseLockService(unittest.TestCase):
         
         # Verify listener stopped
         self.mock_listener_inst.stop.assert_called_once()
-        # Verify hotkey removed
-        self.mock_keyboard.remove_hotkey.assert_called_once()
+        # Verify hotkey is NOT removed on unlock (permanent hotkey)
+        self.mock_keyboard.remove_hotkey.assert_not_called()
+        # Verify cursor released
+        self.mock_user32.ClipCursor.assert_called_once_with(None)
+
+    def test_shutdown(self):
+        service = MouseLockService(self.mock_settings)
+        service._user32 = self.mock_user32
+        
+        # Lock first
+        service.lock()
+        self.assertTrue(service.is_locked())
+        
+        # Reset mocks to verify shutdown calls
+        self.mock_user32.ClipCursor.reset_mock()
+        self.mock_listener_inst.stop.reset_mock()
+        self.mock_keyboard.remove_hotkey.reset_mock()
+        self.mock_keyboard.unhook_all.reset_mock()
+        
+        service.shutdown()
+        
+        self.assertFalse(service.is_locked())
+        self.assertIsNone(service._anchor)
+        
+        # Verify listener stopped
+        self.mock_listener_inst.stop.assert_called_once()
+        # Verify all hotkeys removed on shutdown
+        self.mock_keyboard.unhook_all.assert_called_once()
         # Verify cursor released
         self.mock_user32.ClipCursor.assert_called_once_with(None)
 
