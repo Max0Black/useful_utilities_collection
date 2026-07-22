@@ -12,21 +12,20 @@ class TestKeyboardLockService(unittest.TestCase):
     def test_initial_state(self, mock_keyboard):
         service = KeyboardLockService()
         self.assertFalse(service.is_locked())
-        self.assertEqual(service._allowed_keys, set())
 
     @patch('useful_utilities_collection.services.keyboard_lock_service.keyboard')
     def test_lock_and_unlock(self, mock_keyboard):
         service = KeyboardLockService()
         
         # Lock first time
-        res = service.lock(allowed_keys={42, 54})
+        res = service.lock()
         self.assertTrue(res)
         self.assertTrue(service.is_locked())
         mock_keyboard.hook.assert_called_once()
         
         # Lock second time should be no-op
         mock_keyboard.hook.reset_mock()
-        res_repeat = service.lock(allowed_keys={42, 54})
+        res_repeat = service.lock()
         self.assertTrue(res_repeat)
         self.assertTrue(service.is_locked())
         mock_keyboard.hook.assert_not_called()
@@ -44,24 +43,26 @@ class TestKeyboardLockService(unittest.TestCase):
         mock_keyboard.unhook.assert_not_called()
 
     @patch('useful_utilities_collection.services.keyboard_lock_service.keyboard')
-    def test_lock_blocks_non_allowed_keys(self, mock_keyboard):
+    def test_lock_blocks_all_keys(self, mock_keyboard):
         service = KeyboardLockService()
-        service.lock(allowed_keys={42, 54})
+        service.lock()
         
-        # Allowed key event
-        allowed_event = unittest.mock.Mock()
-        allowed_event.scan_code = 42
-        self.assertTrue(service._on_key_event(allowed_event))
-        
-        # Blocked key event
-        blocked_event = unittest.mock.Mock()
-        blocked_event.scan_code = 30
-        self.assertFalse(service._on_key_event(blocked_event))
+        # Any key press should return False (False = block in Windows keyboard hook)
+        event_shift_dn = unittest.mock.Mock()
+        event_shift_dn.name = "shift"
+        event_shift_dn.event_type = "down"
+        self.assertFalse(service._on_key_event(event_shift_dn))  # False = block
+
+        # Pressing 'a' key alone should be blocked
+        event_a_dn = unittest.mock.Mock()
+        event_a_dn.name = "a"
+        event_a_dn.event_type = "down"
+        self.assertFalse(service._on_key_event(event_a_dn))
 
     @patch('useful_utilities_collection.services.keyboard_lock_service.keyboard')
     def test_shutdown(self, mock_keyboard):
         service = KeyboardLockService()
-        service.lock(allowed_keys={42, 54})
+        service.lock()
         self.assertTrue(service.is_locked())
         
         service.shutdown()
