@@ -153,7 +153,7 @@ def run() -> int:
         # Another instance is running — signal it and exit
         return 0
 
-    is_autostart = "--minimized" in sys.argv
+    is_minimized = "--minimized" in sys.argv or context.settings_service.is_start_minimized()
 
     # --- Loading/Splash Screen ---
     splash = None
@@ -183,12 +183,62 @@ def run() -> int:
 
     context = AppContext()
     window = MainWindow(context, app_icon)
+    # Build enhanced tray menu
+    from useful_utilities_collection.core.translation import t
+    tray = window.tray_icon
+    menu = tray.contextMenu()
+    menu.clear()
+    # Open UUC
+    show_action = menu.addAction(t("app.tray_menu_show"))
+    show_action.triggered.connect(window.show)
+    # Microphone Guard toggle
+    mg_service = context.microphone_guard_service
+    mg_action = menu.addAction(t("app.tray_menu_microphone_guard"))
+    mg_action.setCheckable(True)
+    mg_action.setChecked(mg_service.is_enabled())
+    def toggle_mg():
+        mg_service.toggle()
+        mg_action.setChecked(mg_service.is_enabled())
+    mg_action.triggered.connect(toggle_mg)
+    # Mouse lock toggle
+    ml_service = context.input_lock_service  # Assuming input lock service handles mouse lock
+    ml_action = menu.addAction(t("app.tray_menu_lock_mouse"))
+    ml_action.setCheckable(True)
+    ml_action.setChecked(ml_service.is_locked())
+    def toggle_ml():
+        ml_service.toggle()
+        ml_action.setChecked(ml_service.is_locked())
+    ml_action.triggered.connect(toggle_ml)
+    # Keyboard lock toggle
+    from useful_utilities_collection.services.keyboard_lock_service import KeyboardLockService
+    kb_service = KeyboardLockService()
+    kb_action = menu.addAction(t("app.tray_menu_lock_keyboard"))
+    kb_action.setCheckable(True)
+    kb_action.setChecked(kb_service.is_locked())
+    def toggle_kb():
+        kb_service.toggle()
+        kb_action.setChecked(kb_service.is_locked())
+    kb_action.triggered.connect(toggle_kb)
+    menu.addSeparator()
+    # Settings
+    settings_action = menu.addAction(t("app.tray_menu_settings"))
+    settings_action.triggered.connect(window.open_settings)
+    # Exit
+    exit_action = menu.addAction(t("app.tray_menu_exit"))
+    exit_action.triggered.connect(app.quit)
+    tray.setContextMenu(menu)
+
     window.setWindowIcon(app_icon)
 
-    if not is_autostart:
+    if not is_minimized:
         window.show()
         if splash:
             splash.finish(window)
+    else:
+        # Start minimized to tray
+        window.tray_icon.show()
+        # Ensure no window flash
+        # No need to call window.show()
 
     # --- Start local server so other instances can signal us ---
     local_server = QLocalServer()
