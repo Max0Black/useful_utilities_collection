@@ -159,6 +159,7 @@ class MainWindow(QMainWindow):
 
         # Setup System Tray
         self._setup_tray_icon()
+        self.context.state_changed.connect(self._update_tray_actions)
 
         # Connect session shutdown handling
         QGuiApplication.instance().commitDataRequest.connect(self.on_commit_data)
@@ -212,6 +213,11 @@ class MainWindow(QMainWindow):
             self.guard_status_text.setText(t("microphone_guard.status_title_inactive"))
         self.style().unpolish(self.guard_dot)
         self.style().polish(self.guard_dot)
+
+    def _update_tray_actions(self) -> None:
+        """Placeholder for tray action updates on state change."""
+        # Currently no dynamic tray actions; method exists for future extensions.
+        pass
 
     def _create_sidebar_icon_button(self, icon_text: str, text: str) -> QPushButton:
         button = QPushButton()

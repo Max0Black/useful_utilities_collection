@@ -16,7 +16,11 @@
     "instance_already_running": "UUC is already running — bringing it to the front.",
     "starting": "Starting...",
     "alt_f4_terminated_title": "Program terminated",
-    "alt_f4_terminated_body": "The application was closed directly and is no longer running in the background."
+    "alt_f4_terminated_body": "The application was closed directly and is no longer running in the background.",
+        "tray_menu_microphone_guard": "Microphone Guard",
+        "tray_menu_lock_mouse": "Lock Mouse",
+        "tray_menu_lock_keyboard": "Lock Keyboard",
+        "tray_menu_settings": "Settings"
   },
   "dashboard": {
     "title": "Dashboard",
