@@ -33,6 +33,7 @@ Customize behavior, language, and performance:
 * **Multi-Language**: Full English & German support.
 * **Minimize to Tray**: Minimize the application into the Windows system tray to keep it running invisibly in the background.
 * **Launch on Startup**: Run automatically on Windows login.
+* **Start Minimized**: Start the app silently in the tray on every boot — combine with Launch on Startup for seamless background operation.
 * **Scan Interval**: Adjust the Microphone Guard responsiveness (from 1.0s up to Eco mode or custom duration).
 * **Custom Shortcut**: Change the emergency mouse unlock hotkey.
 
@@ -41,6 +42,8 @@ Customize behavior, language, and performance:
 * **Auto-Safety Unlock**: Minimizing to the tray automatically unlocks your mouse and keyboard if they were locked.
 * **Smart Close Behavior**: Clicking the close `[X]` button will prompt a confirmation dialog if the **Microphone Guard** is active to prevent accidental shutdowns.
 * **Alt+F4 Exit**: Standard Alt+F4 closes the app immediately without prompts or going to the tray.
+* **Quick-Toggle Actions**: Right-click the tray icon to toggle Microphone Guard, Mouse Lock, and Keyboard Lock directly from the tray — no need to open the main window.
+* **Start Minimized**: Configure the app to launch straight to the tray (no window flash) via Settings → Start minimized.
 
 ---
 
