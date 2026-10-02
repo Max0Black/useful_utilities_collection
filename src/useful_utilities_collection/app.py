@@ -14,6 +14,14 @@ from useful_utilities_collection.ui.theme import APP_STYLE
 _INSTANCE_KEY = "UUC_SingleInstance_7f3a2b"
 
 
+def _to_bool_setting(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() in {"1", "true", "yes", "on"}
+    return bool(value)
+
+
 class AnimatedSplashScreen(QSplashScreen):
     def __init__(self, fallback_icon_path: Path, message: str = ""):
         # Create an empty translucent pixmap of size 280x320
@@ -153,12 +161,16 @@ def run() -> int:
         # Another instance is running — signal it and exit
         return 0
 
-    is_autostart = "--minimized" in sys.argv
+    from PySide6.QtCore import QSettings
 
-    # --- Loading/Splash Screen ---
+    # --- Determine startup mode ---
+    _qs = QSettings("UsefulUtilitiesCollection", "UsefulUtilitiesCollection")
+    _persisted_minimized = _to_bool_setting(_qs.value("general/start_minimized", False))
+    is_minimized = ("--minimized" in sys.argv) or _persisted_minimized
+
+    # --- Loading/Splash Screen (skip if minimized) ---
     splash = None
-    if not is_autostart:
-        from PySide6.QtCore import QSettings
+    if not is_minimized:
         from useful_utilities_collection.core.translation import set_language, t
 
         # Load language settings early
@@ -185,7 +197,7 @@ def run() -> int:
     window = MainWindow(context, app_icon)
     window.setWindowIcon(app_icon)
 
-    if not is_autostart:
+    if not is_minimized:
         window.show()
         if splash:
             splash.finish(window)
@@ -206,7 +218,7 @@ def run() -> int:
     local_server.newConnection.connect(on_new_connection)
 
     # Autostart: show tray notification 30 seconds after starting if guard is active
-    if is_autostart:
+    if is_minimized:
         def show_startup_notification():
             if context.microphone_guard_service._guard_enabled:
                 from useful_utilities_collection.core.translation import t
