@@ -77,18 +77,31 @@ class TestInputLockService(unittest.TestCase):
 
     def test_unlock_frees_both_inputs(self):
         service = InputLockService(self.mock_settings)
-        
-        # Force locked states, then unlock
+
         self.mock_keyboard_service.is_locked.return_value = False
         self.mock_mouse_service.is_locked.return_value = False
-        
+
         result = service.unlock()
-        
+
         self.assertTrue(result)
         self.mock_keyboard_service.unlock.assert_called()
         self.mock_mouse_service.unlock.assert_called()
         self.assertFalse(service.keyboard_locked())
         self.assertFalse(service.mouse_locked())
+
+    def test_lock_both_locks_both_keyboard_and_mouse(self):
+        service = InputLockService(self.mock_settings)
+
+        self.mock_keyboard_service.is_locked.return_value = True
+        self.mock_mouse_service.is_locked.return_value = True
+
+        result = service.lock_both()
+
+        self.assertTrue(result)
+        self.mock_keyboard_service.lock.assert_called_once()
+        self.mock_mouse_service.lock.assert_called_once()
+        self.assertTrue(service.keyboard_locked())
+        self.assertTrue(service.mouse_locked())
 
 if __name__ == "__main__":
     unittest.main()

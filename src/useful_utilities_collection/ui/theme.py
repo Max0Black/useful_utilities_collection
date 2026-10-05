@@ -410,11 +410,11 @@ QPushButton#SmallSecondaryButton:hover {
 }
 
 /* ── Form controls ─────────────────────────────────────────── */
-QComboBox, QDoubleSpinBox, QCheckBox, QProgressBar, QSlider {
+QComboBox, QDoubleSpinBox, QSpinBox, QCheckBox, QProgressBar, QSlider {
     font-size: 10pt;
 }
 
-QComboBox, QDoubleSpinBox {
+QComboBox, QDoubleSpinBox, QSpinBox {
     background: COLOR_BG_INPUT_CONTROL;
     border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
     border-radius: 8px;
@@ -423,7 +423,7 @@ QComboBox, QDoubleSpinBox {
     min-width: 160px;
 }
 
-QComboBox:hover, QDoubleSpinBox:hover {
+QComboBox:hover, QDoubleSpinBox:hover, QSpinBox:hover {
     border-color: COLOR_BORDER_BTN_HOVER;
 }
 
@@ -439,13 +439,15 @@ QComboBox QAbstractItemView {
     selection-background-color: COLOR_PRIMARY;
 }
 
-QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
+QDoubleSpinBox::up-button, QDoubleSpinBox::down-button,
+QSpinBox::up-button, QSpinBox::down-button {
     background: transparent;
     border: none;
     width: 20px;
 }
 
-QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
+QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover,
+QSpinBox::up-button:hover, QSpinBox::down-button:hover {
     background: COLOR_BG_MIC_TAG_INACTIVE_HOVER;
 }
 
@@ -588,6 +590,48 @@ QFrame#AppFooter {
     background: transparent;
     border: none;
     border-top: 1px solid COLOR_BORDER_STACK;
+}
+
+/* ── Warning Box for Timed Lock ────────────────────────── */
+QFrame#TimerWarningBox {
+    background: rgba(248, 81, 73, 0.12);
+    border: 1.5px solid COLOR_DANGER;
+    border-radius: 12px;
+}
+
+QLabel#TimerWarningTitle {
+    color: COLOR_DANGER;
+    font-size: 10.5pt;
+    font-weight: 700;
+    background: transparent;
+}
+
+QLabel#TimerWarningText {
+    color: COLOR_TEXT_MAIN;
+    font-size: 9.5pt;
+    background: transparent;
+}
+
+/* ── Timer display (Input Lock countdown) ──────────────── */
+QFrame#TimerDisplayPanel {
+    background: rgba(248, 81, 73, 0.15);
+    border: 2px solid COLOR_DANGER;
+    border-radius: 14px;
+}
+
+QLabel#TimerCountdown {
+    color: #ff6b6b;
+    font-size: 32pt;
+    font-weight: 700;
+    font-family: "Consolas", "Cascadia Mono", monospace;
+    background: transparent;
+}
+
+QLabel#TimerInfoText {
+    color: COLOR_DANGER;
+    font-size: 11pt;
+    font-weight: 700;
+    background: transparent;
 }
 
 /* ── Guard exit confirmation dialog ────────────────────── */

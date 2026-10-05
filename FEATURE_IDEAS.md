@@ -1,232 +1,118 @@
-# 💡 Feature-Ideen für Useful Utilities Collection
+# 💡 Ideas & Future Plans for UUC (Useful Utilities Collection)
 
-Basierend auf einer Code-Analyse der bestehenden Architektur (PySide6/Qt, modulares Page-System, Service-Layer, Toast-Benachrichtigungen, Settings-Persistierung über QSettings).
-
----
-
-## 1. Erweiterte Mikrofon-Guard-Funktionen
-
-### 1.1 App-Whitelist / -Blacklist
-- Bestimmte Apps dürfen den Pegel ändern, ohne dass der Guard zurücksetzt (z.B. Discord bei Voice-Chats).
-- Erkennung über Window-Title oder Prozessname (via `pycaw`/`psutil`).
-
-### 1.2 Per-App / Per-Kontext-Profile
-- Unterschiedliche Zielpegel je nach aktivem Fenster (z.B. 80% für Teams, 100% für Streaming).
-- Schnell-Umschaltung zwischen Profilen per Tray oder Hotkey.
-
-### 1.3 Pegel-Historie & Visualisierung
-- Live-Graph im Dashboard, der den tatsächlichen Pegel über die letzten Minuten anzeigt.
-- Korrektur-Historie mit Timestamps (bereits in `last_correction_text` gespeichert, aber nicht visualisiert).
-
-### 1.4 Geräuschpegel-gesteuerter Guard
-- Automatische Deaktivierung des Guards, wenn für X Sekunden kein Geräusch erkannt wird (via `sounddevice` Stream).
-- Spart Ressourcen und verhindert unnötige Korrekturen bei Stille.
-
-### 1.5 Geräte-Synchronisation
-- Mehrere Mikrofone gleichzeitig auf denselben Zielpegel bringen.
-- Per-Device Auto-Restore (bereits teilweise vorhanden, aber UI-seitig nicht ausgebaut).
-
-### 1.6 Mikrofon-Test / Kalibrierung
-- Kurze Testaufnahme, um Empfindlichkeit zu prüfen.
-- Pegel-Visualisierung während der Aufnahme.
+Here is a collection of thoughts and features that we could gradually build into the application. Feel free to add any new ideas whenever inspiration strikes!
 
 ---
 
-## 2. Input-Lock-Erweiterungen
+## 1. Microphone Guard Enhancements
 
-### 2.1 Timer / Countdown-Sperre ~~(geplant)~~ ✅ IMPLEMENTIERT
-- "Sperre in 5 Minuten" – nützlich für geplante Reinigungsphasen oder Pausen.
-- Countdown-Anzeige in der Seite (Eingabesperre) mit Preset-Dropdown (30s, 1min, 5min, 10min, 30min, 1h, Custom, Unbegrenzt).
-- Custom-Eingabe mit Einheitenwahl (Sekunden/Minuten/Stunden).
-- Start/Stop-Buttons, automatische Freigabe bei Ablauf.
-- Verbleibende Zeit als MM:SS oder HH:MM:SS.
+### 1.1 Volume History & Live Graph
+- A mini live graph on the dashboard showing how microphone volume levels have changed over the past few minutes.
+- Display automatic volume corrections directly with timestamps on the graph so you can easily spot when Guard adjusted your levels.
 
-### 2.2 Touchpad-Sperre
-- Zusätzlich zu Tastatur/Maus das Touchpad temporär deaktivieren (via `pydirectinput` oder Touchpad-Treiber-Hook).
-- Besonders nützlich für Laptop-Reinigung.
-
-### 2.3 Automatische Sperre bei Inaktivität
-- Wenn X Minuten keine Eingabe, automatisch Tastatur sperren (zum Schutz vor Staub).
-- Whitelist für bestimmte Apps (z.B. VS Code während Coding).
-
-### 2.4 Bildschirmsperre / Überlagerung
-- Optional: Schwarz-Overlay über den Bildschirm legen, wenn Maus gesperrt ist.
-- Verhindert versehentliches Anklicken von Passwortfeldern.
-
-### 2.5 Hotkey-Profile
-- Verschiedene Unlock-Hotkeys je nach Kontext (Arbeit vs. Privat).
+### 1.2 Microphone Test & Quick Calibration
+- A quick audio test built right into Microphone Guard: speak into your mic and see immediate visual level feedback.
+- Helps when setting up your device to quickly dial in the perfect target volume.
 
 ---
 
-## 3. Dashboard & Status-Monitoring
+## 2. Input Lock Features
 
-### 3.1 System-Info-Karten
-- CPU-Auslastung, RAM, Temperatur (via `psutil`).
-- Netzwerk-Status (online/offline, aktive Verbindungen).
-- Batterie-Status für Laptops (via `psutil`).
-
-### 3.2 Live-Pegelkurve im Dashboard
-- Echtzeit-Verlauf des Mikrofonpegels als kleiner Sparkline-Graph.
-- Korrektur-Ereignisse als Marker im Graph.
-
-### 3.3 Ereignis-Log
-- Tabellenansicht aller Sperrungen, Korrekturen und Statusänderungen.
-- Export als CSV/JSON.
+### 2.1 Laptop Touchpad Lock
+- In addition to keyboard and mouse locking, add the ability to temporarily block the touchpad.
+- Super handy when wiping down your laptop keyboard without accidentally triggering touchpad gestures.
 
 ---
 
-## 4. UI / UX-Verbesserungen
+## 3. Dashboard & System Overview
 
-### 4.1 Theme-Toggle (Dark / Light / System)
-- Aktuell ist das Theme hart auf Dark mode fixiert.
-- Helles Theme + automatische Erkennung der Windows-Farbeinstellungen (`uiautomation` oder Registry).
+### 3.1 System Info Cards
+- Neat status cards showing CPU usage, RAM, and battery levels (e.g. via `psutil`).
+- Quick check for network connection status (Online / Offline).
 
-### 4.2 Akzentfarben wählen
-- Nutzer können die App-Akzentfarbe individuell setzen (Blau, Grün, Lila, etc.).
-- Umschaltung ohne Neustart via Qt Dynamic Stylesheet.
-
-### 4.3 Sidebar-Position
-- Optionale Links-Positionierung der Sidebar (aktuell nur links, aber manche Nutzer bevorzugen rechts).
-
-### 4.4 Mini-Kompressions-Modus
-- Kompakte Seitenleiste ohne Beschriftungen (nur Icons) für mehr Content-Platz.
-- Nützlich auf kleinen Bildschirmen/Tablets.
-
-### 4.5 Erweiterte Tray-Interaktionen
-- Tray-Icon-Doppelklick öffnet direkt die letzte Seite (statt nur Show/Hide).
-- Tray-Kontextmenü mit Schnellzugriff auf "Guard an/aus", "Maus sperren", etc.
-
-### 4.6 Globale Hotkeys für alle Hauptfunktionen
-- Aktuell nur ein Hotkey (Mouse-Unlock).
-- Weitere Hotkeys: Guard toggeln, Keyboard sperren, App ein/ausblenden.
-
-### 4.7 Toast-Historie
-- Verpasste Toasts werden in einem kleinen Overlay oder der Sidebar gesammelt.
-- "Du hast 3 neue Benachrichtigungen".
-
-### 4.8 Animations-Check
-- Toast-Bug ist behoben; weitere Animationen prüfen (Seitenwechsel, Hover-Effekte).
+### 3.2 Live Volume Sparkline on Dashboard
+- A compact live microphone level curve right on the main dashboard page so you can verify at a glance that everything is regulating smoothly.
 
 ---
 
-## 5. Performance & Robustheit
+## 4. UI & UX Refinements
 
-### 5.1 Polling-Intervall dynamisch anpassen
-- Bei hoher CPU-Last oder Akkubetrieb (`psutil.sensors_battery`) das Polling-Intervall automatisch erhöhen.
-- Spart Akku auf Laptops.
+### 4.1 Light Mode & System Theme Auto-Detection
+- Currently, the application is locked to dark mode. Adding a light theme option and automatic Windows accent/theme detection would be awesome.
 
-### 5.2 CPU-Limiter
-- Maximal X% CPU-Zeit für den Guard-Timer; bei Überschreitung Intervall vergrößern.
+### 4.2 Flexible Sidebar Placement
+- An option to position the sidebar on the right side for users who prefer that layout.
 
-### 5.3 Graceful Degradation
-- Wenn `pycaw`/`comtypes` fehlschlägt, Fallback auf `sounddevice`-API.
-- Wenn beide fehlschlagen, klare Fehlermeldung statt Crash.
+### 4.3 Enhanced Tray Icon Interactions
+- Double-clicking the system tray icon immediately opens the most recently used page (instead of just toggling show/hide).
+- Expand the tray right-click context menu with quick toggles for "Guard On/Off" or "Lock Mouse".
 
-### 5.4 Multi-Monitor-Support
-- Sidebar und Fenster merken sich pro Monitor Position und Größe.
-- Tray-Icon auf allen Monitoren sichtbar halten.
-
-### 5.5 High-DPI / 4K-Verbesserungen
-- Skalierungsfaktor pro Monitor berücksichtigen (`devicePixelRatio`).
-- Icons und Fonts in höheren Auflösungen bereitstellen.
+### 4.4 Smooth Animations & Polish
+- After fixing toast notifications, fine-tune page transition animations and hover micro-interactions to feel silky smooth.
 
 ---
 
-## 6. Datenschutz & Sicherheit
+## 5. Performance & Power Efficiency
 
-### 6.1 Privacy-Dashboard
-- Übersicht: "Wie oft wurde das Mikrofon korrigiert?", "Welche Apps wurden erkannt?".
-- Alle Daten lokal; keine Cloud-Anbindung.
+### 5.1 Smart Battery Polling Rate
+- When unplugged (running on battery power), automatically loosen the polling interval slightly to conserve laptop battery life.
 
-### 6.2 Mikrofon-Zugriffs-Log
-- Windows Event Log oder `pycaw`-Änderungs-Hook nutzen, um zu loggen, **welche App** den Pegel wann geändert hat.
-- Höhere Transparenz für den Nutzer.
+### 5.2 CPU Usage Throttling
+- Automatically throttle background checking frequency if system load spikes, ensuring the app remains ultra-lightweight.
 
-### 6.3 Automatische Deaktivierung bei bestimmten Apps
-- Wenn Teams/Discord/Zoom erkannt wird, Guard automatisch auf "nur warnen" statt "sofort korrigieren" umstellen.
+### 5.3 Resilient Audio Driver Fallbacks
+- If the default Windows Audio API (`pycaw`) stumbles, gracefully fall back to alternative audio backends instead of throwing errors.
 
 ---
 
-## 7. Einstellungen & Verwaltung
+## 6. Privacy & Transparency
 
-### 7.1 Export/Import der Einstellungen
-- `settings.json` exportieren/importieren, um Konfiguration auf anderen PCs zu übertragen.
-- Nützlich nach Neuinstallation.
-
-### 7.2 Backup / Restore
-- Automatisches Backup der Einstellungen in `%APPDATA%`.
-- Wiederherstellung nach Crash oder Deinstallation.
-
-### 7.3 Startup-Optimierung
-- Aktuell wird die App bei Autostart direkt gestartet.
-- Optional: Nur Tray-Icon beim Start, Hauptfenster erst bei Bedarf öffnen (Performance-Gewinn).
+### 6.1 Local Activity Log
+- Simple local stats: How many times did the app adjust volume today? Which microphones were guarded?
+- Everything remains 100% stored locally on your machine — zero cloud sync or data transmission.
 
 ---
 
-## 8. Entwickler- & Power-User-Features
+## 7. Settings & Backup
 
-### 8.1 Debug-Modus & erweitertes Logging
-- `--debug` CLI-Flag für detaillierte Konsolenausgaben.
-- Log-Datei unter `%LOCALAPPDATA%` mit Rotation.
+### 7.1 Export & Import Settings
+- Easily export your configuration to a file and import it on another PC or after a fresh Windows installation.
 
-### 8.2 Simulierte Korrekturen
-- Einstellungsseite: "Test-Korrektur simulieren" für Debug-Zwecke.
-- Ohne tatsächliche Volume-Änderung, nur UI-Feedback.
+### 7.2 Automatic Settings Backup
+- Automatic local backups saved to `%APPDATA%` so your settings are never lost in case of a system crash.
 
-### 8.3 Plugin-System (langfristig)
-- Modulare Erweiterungen via Entry-Points (`importlib.metadata`).
-- Dritte könnten eigene Pages (z.B. Battery Monitor, Clipboard Manager) hinzufügen.
-
-### 8.4 CLI-Schnittstelle
-- `uuc --toggle-guard`, `uuc --lock-keyboard`, `uuc --status`.
-- Nützlich für Skripte und Automatisierung.
+### 7.3 Silent Autostart to System Tray
+- Option to launch directly minimized to the system tray on Windows startup without opening the main window.
 
 ---
 
-## 9. Barrierefreiheit (Accessibility)
+## 8. Extras for Power Users & Developers
 
-### 9.1 Screen-Reader-Support
-- Bessere `accessibleName` und `accessibleDescription` Properties auf allen Widgets.
-- Testen mit Windows Narrator / NVDA.
+### 8.1 Plugin System (Future Goal)
+- Architect modular extensions so third-party developers can easily plug in custom pages (e.g., Clipboard Manager or Memory Monitor).
 
-### 9.2 Hoher Kontrast / Vergrößerung
-- Theme-Variante mit höheren Kontrasten.
-- Schriftgröße und UI-Skalierung in den Einstellungen anpassbar.
-
-### 9.3 Tastaturnavigation
-- Sicherstellen, dass alle Seiten komplett per Tab erreichbar sind.
-- Focus-Indikatoren verbessern.
+### 8.2 Command Line Interface (CLI)
+- Handy CLI flags like `uuc --toggle-guard` or `uuc --lock-keyboard` for scripting and automation.
 
 ---
 
-## 10. Internationalisierung (i18n)
+## 9. Accessibility (a11y)
 
-### 10.1 Weitere Sprachen
-- Französisch, Spanisch, Japanisch etc. sind bereits im Sprach-Dropdown gelistet, aber nicht übersetzt.
-- Community-Translation via Crowdin oder PO-Files.
+### 9.1 Screen Reader Optimization
+- Improve `accessibleName` and `accessibleDescription` attributes across all widgets for full NVDA / Windows Narrator support.
 
-### 10.2 Regionale Formate
-- Datums- und Zeitformate je nach Locale anpassen (aktuell hardcoded `dd.mm.yyyy`).
-- Tausender-Trennzeichen, Währungssymbole (falls später monetäre Features dazu kommen).
+### 9.2 High Contrast Mode & Font Scaling
+- High-contrast theme preset and customizable font sizes in settings.
 
----
-
-## Priorisierung (Vorschlag)
-
-| Priorität | Feature | Aufwand | Nutzen |
-|-----------|---------|---------|--------|
-| Hoch | App-Whitelist für Mic-Guard | Mittel | Hoch |
-| Hoch | CPU-Limiter / Akku-Modus | Niedrig | Hoch |
-| Hoch | Toast-Historie | Niedrig | Mittel |
-| Hoch | ~~Timer / Countdown-Sperre~~ ✅ | Niedrig | Hoch |
-| Hoch | Globale Hotkeys | Mittel | Hoch |
-| Mittel | Pegel-Historie Graph | Mittel | Hoch |
-| Mittel | Export/Import Settings | Niedrig | Mittel |
-| Mittel | Debug-Modus & Logging | Niedrig | Mittel |
-| Mittel | Privacy-Dashboard | Mittel | Mittel |
-| Niedrig | Theme-Toggle | Hoch | Mittel |
-| Niedrig | Plugin-System | Sehr Hoch | Niedrig |
+### 9.3 Full Keyboard Navigation
+- Ensure every single page and control can be effortlessly navigated using only the Tab key.
 
 ---
 
-*Erstellt am 21.07.2026 – soll als lebendes Dokument dienen und bei jedem Sprint geupdated werden.*
+## 10. Languages & Localization (i18n)
+
+### 10.1 Complete Translations
+- Fully translate language dropdown entries (e.g., French, Spanish, Japanese) with complete locale files.
+
+### 10.2 Regional Date & Number Formats
+- Adapt date and time formatting dynamically based on selected locale/region.
