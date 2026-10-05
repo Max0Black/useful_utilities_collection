@@ -77,9 +77,9 @@ class TestSettingsService(unittest.TestCase):
         self.assertEqual(self.mock_settings_data["notifications/notify_on_minimize"], False)
 
     @patch('sys.platform', 'win32')
-    @patch('winreg.CloseKey')
-    @patch('winreg.OpenKey')
-    @patch('winreg.QueryValueEx')
+    @patch('useful_utilities_collection.services.autostart_service.winreg.CloseKey')
+    @patch('useful_utilities_collection.services.autostart_service.winreg.OpenKey')
+    @patch('useful_utilities_collection.services.autostart_service.winreg.QueryValueEx')
     @patch('os.path.exists')
     def test_is_startup_enabled_win32(self, mock_exists, mock_query, mock_open, mock_close):
         # Mock winreg behavior for win32
@@ -91,7 +91,7 @@ class TestSettingsService(unittest.TestCase):
         mock_close.assert_called_once()
 
     @patch('sys.platform', 'win32')
-    @patch('winreg.OpenKey', side_effect=WindowsError)
+    @patch('useful_utilities_collection.services.autostart_service.winreg.OpenKey', side_effect=WindowsError)
     @patch('os.path.exists')
     def test_is_startup_enabled_win32_shortcut_fallback(self, mock_exists, mock_open):
         mock_exists.return_value = True
@@ -103,5 +103,16 @@ class TestSettingsService(unittest.TestCase):
         service = SettingsService()
         self.assertFalse(service.is_startup_enabled())
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_is_start_minimized_default(self):
+        service = SettingsService()
+        self.assertFalse(service.is_start_minimized())
+
+    def test_set_start_minimized(self):
+        service = SettingsService()
+        service.set_start_minimized(True)
+        self.assertTrue(service.is_start_minimized())
+        service.set_start_minimized(False)
+        self.assertFalse(service.is_start_minimized())
+
+    if __name__ == "__main__":
+        unittest.main()

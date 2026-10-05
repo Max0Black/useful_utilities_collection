@@ -159,6 +159,7 @@ class MainWindow(QMainWindow):
 
         # Setup System Tray
         self._setup_tray_icon()
+        self.context.state_changed.connect(self._update_tray_actions)
 
         # Connect session shutdown handling
         QGuiApplication.instance().commitDataRequest.connect(self.on_commit_data)
@@ -213,6 +214,37 @@ class MainWindow(QMainWindow):
         self.style().unpolish(self.guard_dot)
         self.style().polish(self.guard_dot)
 
+    def _update_tray_actions(self) -> None:
+        if not hasattr(self, "mg_action"):
+            return
+        svc = self.context.microphone_guard_service
+        self.mg_action.setChecked(svc._guard_enabled)
+        self.mouse_action.setChecked(self.context.input_lock_service.mouse_locked())
+        self.keyboard_action.setChecked(self.context.input_lock_service.keyboard_locked())
+
+    def open_settings(self) -> None:
+        if self.settings_index is not None:
+            self.switch_page(self.settings_index)
+        self.show_and_activate()
+
+    def _toggle_microphone_guard(self) -> None:
+        svc = self.context.microphone_guard_service
+        device_id = svc.get_selected_device_id()
+        if device_id:
+            current = svc.is_device_guard_enabled(device_id)
+            svc.set_guard_enabled(device_id, not current)
+        self._update_tray_actions()
+
+    def _toggle_mouse_lock(self) -> None:
+        from useful_utilities_collection.modules.input_lock.controller import InputLockController
+        InputLockController(self.context).toggle_mouse_lock()
+        self._update_tray_actions()
+
+    def _toggle_keyboard_lock(self) -> None:
+        from useful_utilities_collection.modules.input_lock.controller import InputLockController
+        InputLockController(self.context).toggle_keyboard_lock()
+        self._update_tray_actions()
+
     def _create_sidebar_icon_button(self, icon_text: str, text: str) -> QPushButton:
         button = QPushButton()
         button.setCheckable(True)
@@ -247,23 +279,51 @@ class MainWindow(QMainWindow):
 
     def _setup_tray_icon(self) -> None:
         self.tray_icon = QSystemTrayIcon(self.app_icon, self)
-        self.tray_icon.setToolTip("Useful Utilities Collection")
-
+        self.tray_icon.setToolTip(t("app.tray_tooltip"))
         tray_menu = QMenu(self)
 
-        self.show_action = QAction("Show Window", self)
+        # Show action
+        self.show_action = QAction(t("app.tray_menu_show"), self)
         self.show_action.triggered.connect(self.show_and_activate)
         tray_menu.addAction(self.show_action)
+        tray_menu.addSeparator()
+
+        # Microphone Guard
+        self.mg_action = QAction(t("app.tray_menu_microphone_guard"), self)
+        self.mg_action.setCheckable(True)
+        self.mg_action.triggered.connect(lambda checked: self._toggle_microphone_guard())
+        tray_menu.addAction(self.mg_action)
+
+        # Mouse lock
+        self.mouse_action = QAction(t("app.tray_menu_lock_mouse"), self)
+        self.mouse_action.setCheckable(True)
+        self.mouse_action.triggered.connect(lambda checked: self._toggle_mouse_lock())
+        tray_menu.addAction(self.mouse_action)
+
+        # Keyboard lock
+        self.keyboard_action = QAction(t("app.tray_menu_lock_keyboard"), self)
+        self.keyboard_action.setCheckable(True)
+        self.keyboard_action.triggered.connect(lambda checked: self._toggle_keyboard_lock())
+        tray_menu.addAction(self.keyboard_action)
 
         tray_menu.addSeparator()
 
-        self.exit_action = QAction("Exit", self)
+        # Settings
+        self.settings_action = QAction(t("app.tray_menu_settings"), self)
+        self.settings_action.triggered.connect(self.open_settings)
+        tray_menu.addAction(self.settings_action)
+
+        tray_menu.addSeparator()
+
+        # Exit action
+        self.exit_action = QAction(t("app.tray_menu_exit"), self)
         self.exit_action.triggered.connect(self.exit_app)
         tray_menu.addAction(self.exit_action)
 
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.activated.connect(self.on_tray_icon_activated)
         self.tray_icon.show()
+        self._update_tray_actions()
 
     def show_and_activate(self) -> None:
         self.show()
@@ -316,6 +376,14 @@ class MainWindow(QMainWindow):
                 self.show_action.setText(t("app.tray_menu_show"))
             if hasattr(self, "exit_action"):
                 self.exit_action.setText(t("app.tray_menu_exit"))
+            if hasattr(self, "mg_action"):
+                self.mg_action.setText(t("app.tray_menu_microphone_guard"))
+            if hasattr(self, "mouse_action"):
+                self.mouse_action.setText(t("app.tray_menu_lock_mouse"))
+            if hasattr(self, "keyboard_action"):
+                self.keyboard_action.setText(t("app.tray_menu_lock_keyboard"))
+            if hasattr(self, "settings_action"):
+                self.settings_action.setText(t("app.tray_menu_settings"))
 
         for index, module in enumerate(self.modules):
             if index < len(self.nav_buttons):

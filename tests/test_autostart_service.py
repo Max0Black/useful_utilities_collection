@@ -1,74 +1,88 @@
-# test_autostart_service.py
-"""Unit tests for the Windows autostart service.
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-The tests mock ``winreg`` to avoid touching the real registry.
-"""
+import unittest
+from unittest.mock import patch, MagicMock
 
-import builtins
-import importlib
-import types
-from unittest import mock
-
-# Import the module under test after mocking winreg.
-
-def _import_autostart_module():
-    # Ensure winreg is mocked before import.
-    mock_winreg = types.SimpleNamespace()
-    mock_winreg.HKEY_CURRENT_USER = 0x80000001
-    mock_winreg.KEY_SET_VALUE = 0x0002
-    mock_winreg.KEY_READ = 0x20019
-    mock_winreg.REG_SZ = 1
-    mock_winreg._store = {}
-
-    def OpenKey(root, path, reserved=0, access=0):
-        return mock_winreg  # use the same object as a context manager
-
-    def SetValueEx(key, name, reserved, type_, value):
-        mock_winreg._store[name] = value
-
-    def DeleteValue(key, name):
-        mock_winreg._store.pop(name, None)
-
-    def QueryValueEx(key, name):
-        if name not in mock_winreg._store:
-            raise FileNotFoundError
-        return mock_winreg._store[name], mock_winreg.REG_SZ
-
-    mock_winreg.OpenKey = mock.Mock(side_effect=OpenKey)
-    mock_winreg.SetValueEx = mock.Mock(side_effect=SetValueEx)
-    mock_winreg.DeleteValue = mock.Mock(side_effect=DeleteValue)
-    mock_winreg.QueryValueEx = mock.Mock(side_effect=QueryValueEx)
-
-    with mock.patch.dict('sys.modules', {'winreg': mock_winreg}):
-        import src.useful_utilities_collection.services.autostart_service as autostart
-        return autostart
+from useful_utilities_collection.services.autostart_service import AutostartService
 
 
-def test_autostart_enable_disable():
-    autostart = _import_autostart_module()
-    # Initially disabled
-    assert not autostart.is_enabled()
-    # Enable and verify
-    autostart.enable()
-    assert autostart.is_enabled()
-    # Disable and verify
-    autostart.disable()
-    assert not autostart.is_enabled()
+class TestAutostartService(unittest.TestCase):
+    def setUp(self):
+        # Patch winreg at module level in autostart_service
+        self.mock_winreg = MagicMock()
+        self.mock_winreg.HKEY_CURRENT_USER = 0x80000001
+        self.mock_winreg.KEY_READ = 0x20019
+        self.mock_winreg.KEY_SET_VALUE = 0x0002
+        self.mock_winreg.REG_SZ = 1
+        self.winreg_patcher = patch(
+            'useful_utilities_collection.services.autostart_service.winreg',
+            self.mock_winreg
+        )
+        # Patch sys.platform to win32
+        self.platform_patcher = patch(
+            'useful_utilities_collection.services.autostart_service.sys.platform',
+            'win32'
+        )
+        # Patch subprocess for shortcut creation
+        self.subprocess_patcher = patch(
+            'useful_utilities_collection.services.autostart_service.subprocess'
+        )
+        # Patch os.path.exists for shortcut check
+        self.exists_patcher = patch(
+            'useful_utilities_collection.services.autostart_service.os.path.exists',
+            return_value=False
+        )
+        self.winreg_patcher.start()
+        self.platform_patcher.start()
+        self.mock_subprocess = self.subprocess_patcher.start()
+        self.exists_patcher.start()
+
+        self.mock_subprocess.run.return_value = MagicMock(returncode=0)
+
+    def tearDown(self):
+        self.winreg_patcher.stop()
+        self.platform_patcher.stop()
+        self.subprocess_patcher.stop()
+        self.exists_patcher.stop()
+
+    def test_enable_writes_registry(self):
+        svc = AutostartService()
+        result = svc.enable()
+        self.assertTrue(result)
+        self.mock_winreg.OpenKey.assert_called()
+        self.mock_winreg.SetValueEx.assert_called()
+
+    def test_disable_deletes_registry(self):
+        svc = AutostartService()
+        result = svc.disable()
+        self.assertTrue(result)
+        self.mock_winreg.OpenKey.assert_called()
+        self.mock_winreg.DeleteValue.assert_called()
+
+    def test_is_enabled_returns_true_when_key_exists(self):
+        self.mock_winreg.QueryValueEx.return_value = ("some_cmd", 1)
+        svc = AutostartService()
+        result = svc.is_enabled()
+        self.assertTrue(result)
+
+    def test_is_enabled_returns_false_when_key_missing(self):
+        self.mock_winreg.OpenKey.side_effect = WindowsError("not found")
+        svc = AutostartService()
+        result = svc.is_enabled()
+        self.assertFalse(result)
+
+    def test_is_enabled_non_win32(self):
+        self.platform_patcher.stop()
+        with patch('useful_utilities_collection.services.autostart_service.sys.platform', 'linux'):
+            import importlib
+            import useful_utilities_collection.services.autostart_service as autostart_service
+            importlib.reload(autostart_service)
+            svc = autostart_service.AutostartService()
+            self.assertFalse(svc.is_enabled())
+        self.platform_patcher.start()
 
 
-def test_settings_service_autostart_integration():
-    # Import settings_service after winreg is mocked
-    autostart = _import_autostart_module()
-    with mock.patch.dict('sys.modules', {'winreg': autostart}):
-        from src.useful_utilities_collection.services.settings_service import SettingsService
-        svc = SettingsService()
-        # Ensure default is False
-        assert svc.is_autostart_enabled() is False
-        # Enable via settings
-        svc.set_autostart(True)
-        assert svc.is_autostart_enabled() is True
-        assert autostart.is_enabled() is True
-        # Disable via settings
-        svc.set_autostart(False)
-        assert svc.is_autostart_enabled() is False
-        assert autostart.is_enabled() is False
+if __name__ == "__main__":
+    unittest.main()

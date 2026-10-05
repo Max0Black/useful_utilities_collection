@@ -16,7 +16,11 @@
     "instance_already_running": "UUC läuft schon – das Fenster wird geöffnet.",
     "starting": "Startet...",
     "alt_f4_terminated_title": "Programm beendet",
-    "alt_f4_terminated_body": "Die Anwendung wurde direkt geschlossen und läuft nicht mehr im Hintergrund."
+    "alt_f4_terminated_body": "Die Anwendung wurde direkt geschlossen und läuft nicht mehr im Hintergrund.",
+        "tray_menu_microphone_guard": "Mikrofon-Guard",
+        "tray_menu_lock_mouse": "Maus sperren",
+        "tray_menu_lock_keyboard": "Tastatur sperren",
+        "tray_menu_settings": "Einstellungen"
   },
   "dashboard": {
     "title": "Dashboard",
