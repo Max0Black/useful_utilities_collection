@@ -4,7 +4,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QTimer, Qt, QRectF
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
-from PySide6.QtWidgets import QApplication, QSplashScreen
+from PySide6.QtWidgets import QApplication, QSplashScreen, QSystemTrayIcon
 from PySide6.QtGui import QIcon, QPixmap, QPainter, QPen, QColor, QFont, QBrush
 
 from useful_utilities_collection.core.app_context import AppContext
@@ -225,7 +225,7 @@ def run() -> int:
                 window.tray_icon.showMessage(
                     t("app.guard_active_startup_title"),
                     t("app.guard_active_startup_body"),
-                    app_icon,
+                    QSystemTrayIcon.Information,
                     4000,
                 )
         QTimer.singleShot(30000, show_startup_notification)

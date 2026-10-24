@@ -176,6 +176,7 @@
     "toast_shortcut_saved": "Tastenkombination gespeichert: {shortcut}",
     "toast_startup_enabled": "Autostart aktiviert.",
     "toast_startup_disabled": "Autostart deaktiviert.",
+    "toast_startup_failed": "Autostart konnte nicht konfiguriert werden.",
     "shortcut_placeholder": "Klicken zum Aufnehmen...",
     "shortcut_recording": "⏺ Tasten drücken..."
   },

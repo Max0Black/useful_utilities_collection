@@ -36,10 +36,9 @@ class AutostartService:
             return False
         reg_exists = False
         try:
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.RUN_KEY, 0, winreg.KEY_READ)
-            value, _ = winreg.QueryValueEx(key, self.APP_NAME)
-            winreg.CloseKey(key)
-            reg_exists = True
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.RUN_KEY, 0, winreg.KEY_READ) as key:
+                _value, _ = winreg.QueryValueEx(key, self.APP_NAME)
+                reg_exists = True
         except Exception:
             pass
         startup_dir = os.path.expandvars(r"%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup")
@@ -52,28 +51,26 @@ class AutostartService:
     # ---------------------------------------------------------------------
     def _enable_registry(self) -> bool:
         try:
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.RUN_KEY, 0, winreg.KEY_SET_VALUE)
-            exe_path = sys.executable
-            if "python.exe" in exe_path.lower() or "pythonw.exe" in exe_path.lower():
-                # Development mode – point to main.py
-                main_py_path = Path(__file__).resolve().parents[2] / "main.py"
-                cmd = f'"{exe_path}" "{main_py_path}" --minimized'
-            else:
-                cmd = f'"{exe_path}" --minimized'
-            winreg.SetValueEx(key, self.APP_NAME, 0, winreg.REG_SZ, cmd)
-            winreg.CloseKey(key)
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.RUN_KEY, 0, winreg.KEY_SET_VALUE) as key:
+                exe_path = sys.executable
+                if "python.exe" in exe_path.lower() or "pythonw.exe" in exe_path.lower():
+                    # Development mode – point to main.py
+                    main_py_path = Path(__file__).resolve().parents[2] / "main.py"
+                    cmd = f'"{exe_path}" "{main_py_path}" --minimized'
+                else:
+                    cmd = f'"{exe_path}" --minimized'
+                winreg.SetValueEx(key, self.APP_NAME, 0, winreg.REG_SZ, cmd)
             return True
         except Exception:
             return False
 
     def _disable_registry(self) -> bool:
         try:
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.RUN_KEY, 0, winreg.KEY_SET_VALUE)
-            try:
-                winreg.DeleteValue(key, self.APP_NAME)
-            except FileNotFoundError:
-                pass
-            winreg.CloseKey(key)
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.RUN_KEY, 0, winreg.KEY_SET_VALUE) as key:
+                try:
+                    winreg.DeleteValue(key, self.APP_NAME)
+                except FileNotFoundError:
+                    pass
             return True
         except Exception:
             return False
@@ -81,12 +78,12 @@ class AutostartService:
     # ---------------------------------------------------------------------
     # Shortcut creation / removal – copied from SettingsService
     # ---------------------------------------------------------------------
-    @staticmethod
-    def _create_startup_shortcut(enabled: bool) -> bool:
+    @classmethod
+    def _create_startup_shortcut(cls, enabled: bool) -> bool:
         """Create or delete the startup folder shortcut.
         Returns True on success (or when disabling and shortcut does not exist)."""
         startup_dir = os.path.expandvars(r"%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup")
-        shortcut_path = os.path.join(startup_dir, "UsefulUtilitiesCollection.lnk")
+        shortcut_path = os.path.join(startup_dir, f"{cls.APP_NAME}.lnk")
         if not enabled:
             if os.path.exists(shortcut_path):
                 try:
