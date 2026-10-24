@@ -641,59 +641,73 @@ QDialog#GuardExitDialog {
     border-radius: 16px;
 }
 
-/* ── Modern Microphone Guard Hero Banner ───────────────── */
-QFrame#MicHeroCard {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #161f2e, stop:1 #131b26);
-    border: 1px solid #23344d;
-    border-radius: 16px;
-}
-
-QFrame#MicHeroCard[active="true"] {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #12281e, stop:1 #101d18);
-    border: 1.5px solid #2ea043;
-}
-
-QLabel#MicHeroIcon {
-    font-size: 26pt;
+/* ── Inline Status Indicator (Simple & Native) ──────────── */
+QLabel#StatusIndicatorDot {
+    font-size: 8pt;
     background: transparent;
 }
 
-QLabel#MicHeroTitle {
+QLabel#StatusIndicatorDot[active="true"] {
+    color: COLOR_SUCCESS;
+}
+
+QLabel#StatusIndicatorDot[active="false"] {
+    color: COLOR_TEXT_MUTED_DARK;
+}
+
+QLabel#StatusIndicatorText {
+    font-size: 11pt;
+    font-weight: 600;
     color: COLOR_TEXT_WHITE;
-    font-size: 14pt;
-    font-weight: 700;
     background: transparent;
 }
 
-QLabel#MicHeroSubtitle {
-    color: COLOR_TEXT_MUTED_LIGHT;
+QLabel#StatusIndicatorHint {
     font-size: 9.5pt;
+    color: COLOR_TEXT_MUTED_LIGHT;
     background: transparent;
 }
 
-/* ── Modern Card Container with Accent Header ──────────── */
+/* ── Clean Section Panels ──────────────────────────────── */
 QFrame#ModernPanel {
     background: COLOR_BG_PANEL_SIDEBAR_BTN;
     border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
-    border-radius: 16px;
+    border-radius: 12px;
 }
 
 QLabel#ModernSectionHeader {
     color: COLOR_TEXT_WHITE;
     font-size: 11pt;
+    font-weight: 600;
+    background: transparent;
+}
+
+/* ── Volume Cards (Current & Target Side-by-Side) ───────── */
+QFrame#VolumeMetricCard {
+    background: COLOR_BG_INPUT_CONTROL;
+    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+
+QLabel#VolumeMetricCaption {
+    color: COLOR_TEXT_MUTED_LIGHT;
+    font-size: 9pt;
+    font-weight: 500;
+    background: transparent;
+}
+
+QLabel#VolumeMetricValue {
+    color: COLOR_TEXT_WHITE;
+    font-size: 18pt;
     font-weight: 700;
     background: transparent;
 }
 
-QLabel#ModernLevelBadge {
-    background: COLOR_BG_INPUT_CONTROL;
-    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
-    border-radius: 8px;
-    padding: 3px 8px;
-    font-weight: 700;
+QLabel#VolumeMetricValue[accent="true"] {
     color: COLOR_ACCENT;
-    font-size: 10pt;
 }
+
 
 
 """

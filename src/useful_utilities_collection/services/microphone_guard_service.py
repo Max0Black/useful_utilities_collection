@@ -45,6 +45,10 @@ class MicrophoneGuardService:
         self._last_correction_text: str = self._settings.value(
             "microphone_guard/last_correction_text", "–"
         )
+        val_from = self._settings.value("microphone_guard/last_correction_from", None)
+        self._last_correction_from: Optional[int] = int(val_from) if val_from is not None else None
+        val_to = self._settings.value("microphone_guard/last_correction_to", None)
+        self._last_correction_to: Optional[int] = int(val_to) if val_to is not None else None
         self._cached_devices: list[MicrophoneDevice] = []
         
         # Legacy fields for backward compatibility and tests
@@ -275,7 +279,11 @@ class MicrophoneGuardService:
             changed = self._set_device_volume_level(device_id, target_level)
             if changed:
                 self._last_correction_text = datetime.now().strftime("%d.%m.%Y, %H:%M:%S")
+                self._last_correction_from = previous_level
+                self._last_correction_to = target_level
                 self._settings.setValue("microphone_guard/last_correction_text", self._last_correction_text)
+                self._settings.setValue("microphone_guard/last_correction_from", previous_level)
+                self._settings.setValue("microphone_guard/last_correction_to", target_level)
                 self._settings.sync()
                 current_level = self._get_device_volume_level(device_id) or target_level
                 device.current_level = current_level
@@ -345,7 +353,11 @@ class MicrophoneGuardService:
                 if changed:
                     restored_any = True
                     self._last_correction_text = datetime.now().strftime("%d.%m.%Y, %H:%M:%S")
+                    self._last_correction_from = previous_level
+                    self._last_correction_to = target_level
                     self._settings.setValue("microphone_guard/last_correction_text", self._last_correction_text)
+                    self._settings.setValue("microphone_guard/last_correction_from", previous_level)
+                    self._settings.setValue("microphone_guard/last_correction_to", target_level)
                     self._settings.sync()
                     dev.current_level = target_level
                     corrected_devices.append({
@@ -380,6 +392,9 @@ class MicrophoneGuardService:
 
     def get_last_correction_text(self) -> str:
         return self._last_correction_text
+
+    def get_last_correction_levels(self) -> tuple[Optional[int], Optional[int]]:
+        return self._last_correction_from, self._last_correction_to
 
     def _build_default_device(self) -> Optional[MicrophoneDevice]:
         display_name = self._get_default_input_name()
