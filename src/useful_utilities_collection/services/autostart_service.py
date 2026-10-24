@@ -76,7 +76,7 @@ class AutostartService:
             return False
 
     # ---------------------------------------------------------------------
-    # Shortcut creation / removal – copied from SettingsService
+    # Shortcut creation / removal – via VBScript script or PowerShell
     # ---------------------------------------------------------------------
     @classmethod
     def _create_startup_shortcut(cls, enabled: bool) -> bool:
@@ -91,6 +91,7 @@ class AutostartService:
                 except Exception:
                     pass
             return True
+
         # Determine target and arguments
         exe_path = sys.executable
         if "python.exe" in exe_path.lower() or "pythonw.exe" in exe_path.lower():
@@ -102,18 +103,20 @@ class AutostartService:
             target_path = exe_path
             arguments = "--minimized"
             working_dir = str(Path(exe_path).parent)
-        # PowerShell command to create shortcut
-        ps_cmd = (
-            f'$WshShell = New-Object -ComObject WScript.Shell; '
-            f'$Shortcut = $WshShell.CreateShortcut("{shortcut_path}"); '
-            f'$Shortcut.TargetPath = "{target_path}"; '
-            f'$Shortcut.Arguments = "{arguments}"; '
-            f'$Shortcut.WorkingDirectory = "{working_dir}"; '
-            f'$Shortcut.Save()'
+
+        # Fast direct WScript.Shell invocation using cscript/wscript
+        vbs_cmd = (
+            f'Set sh = CreateObject("WScript.Shell"): '
+            f'Set sc = sh.CreateShortcut("{shortcut_path}"): '
+            f'sc.TargetPath = "{target_path}": '
+            f'sc.Arguments = "{arguments}": '
+            f'sc.WorkingDirectory = "{working_dir}": '
+            f'sc.Save'
         )
         try:
             subprocess.run(
-                ["powershell", "-NoProfile", "-Command", ps_cmd],
+                ["cscript", "//nologo", "//e:vbs", "-"],
+                input=vbs_cmd,
                 capture_output=True,
                 text=True,
                 check=True,
@@ -121,4 +124,23 @@ class AutostartService:
             )
             return True
         except Exception:
-            return False
+            # Fallback to powershell if cscript is not available
+            ps_cmd = (
+                f'$WshShell = New-Object -ComObject WScript.Shell; '
+                f'$Shortcut = $WshShell.CreateShortcut("{shortcut_path}"); '
+                f'$Shortcut.TargetPath = "{target_path}"; '
+                f'$Shortcut.Arguments = "{arguments}"; '
+                f'$Shortcut.WorkingDirectory = "{working_dir}"; '
+                f'$Shortcut.Save()'
+            )
+            try:
+                subprocess.run(
+                    ["powershell", "-NoProfile", "-Command", ps_cmd],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    creationflags=0x08000000  # CREATE_NO_WINDOW
+                )
+                return True
+            except Exception:
+                return False

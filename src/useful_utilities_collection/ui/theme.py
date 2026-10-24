@@ -641,6 +641,61 @@ QDialog#GuardExitDialog {
     border-radius: 16px;
 }
 
+/* ── Modern Microphone Guard Hero Banner ───────────────── */
+QFrame#MicHeroCard {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #161f2e, stop:1 #131b26);
+    border: 1px solid #23344d;
+    border-radius: 16px;
+}
+
+QFrame#MicHeroCard[active="true"] {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #12281e, stop:1 #101d18);
+    border: 1.5px solid #2ea043;
+}
+
+QLabel#MicHeroIcon {
+    font-size: 26pt;
+    background: transparent;
+}
+
+QLabel#MicHeroTitle {
+    color: COLOR_TEXT_WHITE;
+    font-size: 14pt;
+    font-weight: 700;
+    background: transparent;
+}
+
+QLabel#MicHeroSubtitle {
+    color: COLOR_TEXT_MUTED_LIGHT;
+    font-size: 9.5pt;
+    background: transparent;
+}
+
+/* ── Modern Card Container with Accent Header ──────────── */
+QFrame#ModernPanel {
+    background: COLOR_BG_PANEL_SIDEBAR_BTN;
+    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
+    border-radius: 16px;
+}
+
+QLabel#ModernSectionHeader {
+    color: COLOR_TEXT_WHITE;
+    font-size: 11pt;
+    font-weight: 700;
+    background: transparent;
+}
+
+QLabel#ModernLevelBadge {
+    background: COLOR_BG_INPUT_CONTROL;
+    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
+    border-radius: 8px;
+    padding: 3px 8px;
+    font-weight: 700;
+    color: COLOR_ACCENT;
+    font-size: 10pt;
+}
+
+
 """
 
 def generate_style() -> str:

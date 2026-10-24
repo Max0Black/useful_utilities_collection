@@ -27,6 +27,7 @@ class TrayManager(QObject):
 
     def _setup_menu(self) -> None:
         self.menu = QMenu(self.window)
+        self.menu.aboutToShow.connect(self.update_actions)
 
         # Show action
         self.show_action = QAction(t("app.tray_menu_show"), self.window)

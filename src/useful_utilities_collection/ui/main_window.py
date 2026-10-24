@@ -194,6 +194,7 @@ class MainWindow(QMainWindow):
         self.tray_icon = self.tray_manager.tray_icon
 
         self.context.state_changed.connect(self.tray_manager.update_actions)
+        self.context.input_lock_service.state.changed.connect(self.tray_manager.update_actions)
         self.context.state_changed.connect(self.retranslate_ui)
         self.context.state_changed.connect(self._update_guard_indicator)
         self.context.notification_requested.connect(self.show_tray_message)
