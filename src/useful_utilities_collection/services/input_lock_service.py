@@ -7,9 +7,37 @@ class InputLockService:
     def __init__(self, settings_service=None):
         self.state = InputLockState()
         self.settings_service = settings_service
-        self.keyboard_lock_service = KeyboardLockService()
-        self.mouse_lock_service = MouseLockService(settings_service)
+        self._emergency_unlock_callbacks = []
+        self.keyboard_lock_service = KeyboardLockService(
+            settings_service=settings_service,
+            on_emergency_unlock=self.emergency_unlock,
+        )
+        self.mouse_lock_service = MouseLockService(
+            settings_service=settings_service,
+            on_emergency_unlock=self.emergency_unlock,
+        )
         self._sync_state()
+
+    def add_emergency_unlock_callback(self, callback) -> None:
+        if callback not in self._emergency_unlock_callbacks:
+            self._emergency_unlock_callbacks.append(callback)
+
+    def remove_emergency_unlock_callback(self, callback) -> None:
+        if callback in self._emergency_unlock_callbacks:
+            self._emergency_unlock_callbacks.remove(callback)
+
+    def emergency_unlock(self) -> bool:
+        result = self.unlock()
+        for callback in list(self._emergency_unlock_callbacks):
+            try:
+                callback()
+            except Exception:
+                pass
+        return result
+
+    def update_hotkey(self) -> None:
+        self.keyboard_lock_service.update_hotkey()
+        self.mouse_lock_service.update_hotkey()
 
     def lock_keyboard(self) -> bool:
         self.unlock_mouse()

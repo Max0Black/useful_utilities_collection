@@ -55,7 +55,7 @@ class MicrophoneGuardPage(BasePage):
         self.toast = ToastLabel(scroll.viewport())
         self._scroll = scroll
 
-        # ── Header with inline status indicator ───────────────────────
+        # ── Header ───────────────────────────────────────────────────
         header_row = QHBoxLayout()
         header_left = QVBoxLayout()
         header_left.setSpacing(4)
@@ -70,17 +70,6 @@ class MicrophoneGuardPage(BasePage):
         header_left.addWidget(self.title_label)
         header_left.addWidget(self.subtitle_label)
         header_row.addLayout(header_left, 1)
-
-        # Inline status indicator (simple dot + text, no boxy hero card)
-        status_box = QHBoxLayout()
-        status_box.setSpacing(8)
-        self.status_dot = QLabel("●")
-        self.status_dot.setObjectName("StatusIndicatorDot")
-        self.status_text = QLabel()
-        self.status_text.setObjectName("StatusIndicatorText")
-        status_box.addWidget(self.status_dot)
-        status_box.addWidget(self.status_text)
-        header_row.addLayout(status_box)
 
         root.addLayout(header_row)
 
@@ -374,15 +363,6 @@ class MicrophoneGuardPage(BasePage):
 
         if self._config_device_id is None:
             self._config_device_id = selected_id
-
-        # ── Inline Status Indicator ───────────────────────────────────
-        if global_enabled:
-            self.status_dot.setProperty("active", "true")
-            self.status_text.setText(t("microphone_guard.status_title_active"))
-        else:
-            self.status_dot.setProperty("active", "false")
-            self.status_text.setText(t("microphone_guard.status_title_inactive"))
-        self.repolish(self.status_dot)
 
         # ── Mics panel header ─────────────────────────────────────────
         self.mics_panel_title.setText(t("microphone_guard.active_mics_title"))
