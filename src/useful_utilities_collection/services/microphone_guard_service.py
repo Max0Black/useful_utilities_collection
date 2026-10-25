@@ -3,12 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
-
-import sounddevice as sd
-from PySide6.QtCore import QSettings
 from ctypes import POINTER, cast
+import sounddevice as sd
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume, EDataFlow, DEVICE_STATE
+from PySide6.QtCore import QSettings
+
+from useful_utilities_collection.services import audio_backend
 
 
 @dataclass
@@ -44,6 +45,10 @@ class MicrophoneGuardService:
         self._last_correction_text: str = self._settings.value(
             "microphone_guard/last_correction_text", "–"
         )
+        val_from = self._settings.value("microphone_guard/last_correction_from", None)
+        self._last_correction_from: Optional[int] = int(val_from) if val_from is not None else None
+        val_to = self._settings.value("microphone_guard/last_correction_to", None)
+        self._last_correction_to: Optional[int] = int(val_to) if val_to is not None else None
         self._cached_devices: list[MicrophoneDevice] = []
         
         # Legacy fields for backward compatibility and tests
@@ -74,18 +79,10 @@ class MicrophoneGuardService:
 
     def list_devices(self) -> list[MicrophoneDevice]:
         devices = []
-        default_id = "default-capture"
-        try:
-            default_mic = AudioUtilities.GetMicrophone()
-            if default_mic:
-                real_id = default_mic.GetId()
-                if "Mock" not in type(real_id).__name__:
-                    default_id = real_id
-        except Exception:
-            pass
+        default_id = self._get_default_device_id()
 
         try:
-            pycaw_devices = AudioUtilities.GetAllDevices(EDataFlow.eCapture.value, DEVICE_STATE.ACTIVE.value)
+            pycaw_devices = audio_backend.get_all_capture_devices()
             from PySide6.QtCore import QCoreApplication
             for pycaw_dev in pycaw_devices:
                 QCoreApplication.processEvents()
@@ -155,15 +152,7 @@ class MicrophoneGuardService:
 
     def get_selected_device_id(self) -> Optional[str]:
         if not self._selected_device_id:
-            try:
-                default_mic = AudioUtilities.GetMicrophone()
-                if default_mic:
-                    real_id = default_mic.GetId()
-                    if "Mock" not in type(real_id).__name__:
-                        return real_id
-            except Exception:
-                pass
-            return "default-capture"
+            return self._get_default_device_id()
         return self._selected_device_id or None
 
     def set_selected_device_id(self, device_id: str) -> None:
@@ -290,7 +279,11 @@ class MicrophoneGuardService:
             changed = self._set_device_volume_level(device_id, target_level)
             if changed:
                 self._last_correction_text = datetime.now().strftime("%d.%m.%Y, %H:%M:%S")
+                self._last_correction_from = previous_level
+                self._last_correction_to = target_level
                 self._settings.setValue("microphone_guard/last_correction_text", self._last_correction_text)
+                self._settings.setValue("microphone_guard/last_correction_from", previous_level)
+                self._settings.setValue("microphone_guard/last_correction_to", target_level)
                 self._settings.sync()
                 current_level = self._get_device_volume_level(device_id) or target_level
                 device.current_level = current_level
@@ -360,7 +353,11 @@ class MicrophoneGuardService:
                 if changed:
                     restored_any = True
                     self._last_correction_text = datetime.now().strftime("%d.%m.%Y, %H:%M:%S")
+                    self._last_correction_from = previous_level
+                    self._last_correction_to = target_level
                     self._settings.setValue("microphone_guard/last_correction_text", self._last_correction_text)
+                    self._settings.setValue("microphone_guard/last_correction_from", previous_level)
+                    self._settings.setValue("microphone_guard/last_correction_to", target_level)
                     self._settings.sync()
                     dev.current_level = target_level
                     corrected_devices.append({
@@ -396,6 +393,9 @@ class MicrophoneGuardService:
     def get_last_correction_text(self) -> str:
         return self._last_correction_text
 
+    def get_last_correction_levels(self) -> tuple[Optional[int], Optional[int]]:
+        return self._last_correction_from, self._last_correction_to
+
     def _build_default_device(self) -> Optional[MicrophoneDevice]:
         display_name = self._get_default_input_name()
         current_level = self._get_default_microphone_level()
@@ -403,16 +403,7 @@ class MicrophoneGuardService:
         if current_level is None:
             return None
 
-        default_id = "default-capture"
-        try:
-            default_mic = AudioUtilities.GetMicrophone()
-            if default_mic:
-                real_id = default_mic.GetId()
-                if "Mock" not in type(real_id).__name__:
-                    default_id = real_id
-        except Exception:
-            pass
-
+        default_id = self._get_default_device_id()
         prefix = self._device_settings_prefix(default_id)
         legacy_target = self._legacy_target_level
         legacy_restore = self._legacy_auto_restore
@@ -431,101 +422,26 @@ class MicrophoneGuardService:
             is_default=True,
         )
 
+    def _get_default_device_id(self) -> str:
+        return audio_backend.get_default_device_id()
+
     def _get_default_input_name(self) -> str:
-        try:
-            default_input, _ = sd.default.device
-            if default_input is None or default_input < 0:
-                return "Default microphone"
-            info = sd.query_devices(default_input)
-            return str(info.get("name", "Default microphone"))
-        except Exception:
-            return "Default microphone"
+        return audio_backend.get_default_input_name()
 
     def _get_default_microphone_endpoint(self):
-        try:
-            device = AudioUtilities.GetMicrophone()
-            if device is None:
-                return None
-            interface = device.Activate(
-                IAudioEndpointVolume._iid_,
-                CLSCTX_ALL,
-                None,
-            )
-            return cast(interface, POINTER(IAudioEndpointVolume))
-        except Exception:
-            return None
+        return audio_backend.get_default_microphone_endpoint()
 
     def _get_default_microphone_level(self) -> Optional[int]:
-        endpoint_volume = self._get_default_microphone_endpoint()
-        if endpoint_volume is None:
-            return None
-
-        try:
-            scalar = endpoint_volume.GetMasterVolumeLevelScalar()
-            return max(0, min(100, int(round(float(scalar) * 100))))
-        except Exception:
-            return None
+        return audio_backend.get_default_microphone_level()
 
     def _set_default_microphone_level(self, level_percent: int) -> bool:
-        endpoint_volume = self._get_default_microphone_endpoint()
-        if endpoint_volume is None:
-            return False
-
-        try:
-            scalar = max(0.0, min(1.0, level_percent / 100.0))
-            endpoint_volume.SetMasterVolumeLevelScalar(scalar, None)
-            return True
-        except Exception:
-            return False
+        return audio_backend.set_default_microphone_level(level_percent)
 
     def _get_device_volume_level(self, device_id: str) -> Optional[int]:
-        try:
-            pycaw_devices = AudioUtilities.GetAllDevices(EDataFlow.eCapture.value, DEVICE_STATE.ACTIVE.value)
-            for pycaw_dev in pycaw_devices:
-                if pycaw_dev.id == device_id:
-                    volume = pycaw_dev.EndpointVolume
-                    if volume:
-                        scalar = volume.GetMasterVolumeLevelScalar()
-                        return max(0, min(100, int(round(float(scalar) * 100))))
-        except Exception as e:
-            print(f"Error getting volume for {device_id}: {e}")
-
-        try:
-            default_mic = AudioUtilities.GetMicrophone()
-            if default_mic:
-                real_id = default_mic.GetId()
-                is_default_id = (device_id == "default-capture") or (real_id == device_id) or ("Mock" in type(real_id).__name__)
-                if is_default_id:
-                    return self._get_default_microphone_level()
-        except Exception:
-            pass
-
-        return None
+        return audio_backend.get_device_volume_level(device_id)
 
     def _set_device_volume_level(self, device_id: str, level_percent: int) -> bool:
-        try:
-            pycaw_devices = AudioUtilities.GetAllDevices(EDataFlow.eCapture.value, DEVICE_STATE.ACTIVE.value)
-            for pycaw_dev in pycaw_devices:
-                if pycaw_dev.id == device_id:
-                    volume = pycaw_dev.EndpointVolume
-                    if volume:
-                        scalar = max(0.0, min(1.0, level_percent / 100.0))
-                        volume.SetMasterVolumeLevelScalar(scalar, None)
-                        return True
-        except Exception as e:
-            print(f"Error setting volume for {device_id}: {e}")
-
-        try:
-            default_mic = AudioUtilities.GetMicrophone()
-            if default_mic:
-                real_id = default_mic.GetId()
-                is_default_id = (device_id == "default-capture") or (real_id == device_id) or ("Mock" in type(real_id).__name__)
-                if is_default_id:
-                    return self._set_default_microphone_level(level_percent)
-        except Exception:
-            pass
-
-        return False
+        return audio_backend.set_device_volume_level(device_id, level_percent)
 
     @staticmethod
     def _to_bool(value) -> bool:

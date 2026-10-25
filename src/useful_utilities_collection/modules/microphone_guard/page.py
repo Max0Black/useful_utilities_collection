@@ -9,7 +9,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QSizePolicy,
-    QApplication
 )
 
 from useful_utilities_collection.core.translation import t
@@ -17,109 +16,7 @@ from useful_utilities_collection.modules.microphone_guard.controller import (
     MicrophoneGuardController,
 )
 from useful_utilities_collection.ui.components import BasePage, ToastLabel
-
-
-
-def _get_mic_icon(display_name: str, is_default: bool) -> str:
-    """Return an emoji icon based on the device name keywords."""
-    name_lower = display_name.lower()
-    if any(k in name_lower for k in ("controller", "gamepad", "xbox", "playstation", "ps4",
-                                      "ps5", "dualsense", "dualshock")):
-        return "🎮"
-    if any(k in name_lower for k in ("stereo mix", "what u hear", "what you hear", "loopback",
-                                      "wave out", "mix", "ausgabe", "wiedergabe")):
-        return "🔊"
-    if any(k in name_lower for k in ("cam", "camera", "webcam", "kamera")):
-        return "📷"
-    if any(k in name_lower for k in ("headset", "headphone", "kopfhörer", "kopfhoerer",
-                                      "earphone", "ear", "in-ear")):
-        return "🎧"
-    if any(k in name_lower for k in ("bluetooth", "bt ", "wireless", "funk")):
-        return "📡"
-    if any(k in name_lower for k in ("usb", "u s b")):
-        return "🔌"
-    if any(k in name_lower for k in ("virtual", "voicemeeter", "vb-audio", "voip",
-                                      "discord", "teamspeak", "software")):
-        return "🖥"
-    return "🎙"
-
-
-class MicTag(QFrame):
-    """Clickable mic tag.
-
-    Interaction model:
-    - Single click on un-selected tag  → selects it (opens its config below).
-    - Single click on already-selected tag → toggles guard on/off for this device.
-    - Keyboard: Enter/Space = single-click behaviour.
-    """
-
-    def __init__(self, device, is_active: bool, is_selected: bool,
-                 on_select, on_toggle, on_toggle_all, parent=None):
-        super().__init__(parent)
-        self._device = device
-        self._on_select = on_select
-        self._on_toggle = on_toggle
-        self._on_toggle_all = on_toggle_all
-        self._is_selected = is_selected
-
-        if is_active and is_selected:
-            name = "MicTagActiveSelected"
-        elif is_active:
-            name = "MicTagActive"
-        elif is_selected:
-            name = "MicTagSelected"
-        else:
-            name = "MicTagInactive"
-
-        self.setObjectName(name)
-        self.setCursor(Qt.PointingHandCursor)
-        self.setFocusPolicy(Qt.StrongFocus)
-        self.setToolTip(device.display_name)
-
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(10, 6, 12, 6)
-        layout.setSpacing(6)
-
-        icon_label = QLabel(_get_mic_icon(device.display_name, device.is_default))
-        icon_label.setObjectName("MicTagIcon")
-
-        name_label = QLabel(device.display_name)
-        name_label.setObjectName("MicTagText")
-
-        if is_active:
-            dot = QLabel("●")
-            dot.setObjectName("MicTagDot")
-            layout.addWidget(dot)
-
-        layout.addWidget(icon_label)
-        layout.addWidget(name_label)
-
-    def _activate_tag(self) -> None:
-        if self._is_selected:
-            self._on_toggle(self._device)
-        else:
-            self._on_select(self._device)
-
-    def mousePressEvent(self, event) -> None:
-        if event.button() == Qt.LeftButton:
-            self._activate_tag()
-            event.accept()
-            return
-        super().mousePressEvent(event)
-
-    def mouseDoubleClickEvent(self, event) -> None:
-        if event.button() == Qt.LeftButton:
-            self._activate_tag()
-            event.accept()
-            return
-        super().mouseDoubleClickEvent(event)
-
-    def keyPressEvent(self, event) -> None:
-        if event.key() in (Qt.Key_Return, Qt.Key_Space):
-            self._activate_tag()
-            event.accept()
-            return
-        super().keyPressEvent(event)
+from useful_utilities_collection.ui.mic_tag import MicTag, get_mic_icon
 
 
 class MicrophoneGuardPage(BasePage):
@@ -152,13 +49,17 @@ class MicrophoneGuardPage(BasePage):
         outer_layout.addWidget(scroll)
 
         root = QVBoxLayout(inner)
-        root.setContentsMargins(28, 28, 28, 28)
-        root.setSpacing(14)
+        root.setContentsMargins(28, 24, 28, 28)
+        root.setSpacing(18)
 
         self.toast = ToastLabel(scroll.viewport())
         self._scroll = scroll
 
         # ── Header ───────────────────────────────────────────────────
+        header_row = QHBoxLayout()
+        header_left = QVBoxLayout()
+        header_left.setSpacing(4)
+
         self.title_label = QLabel()
         self.title_label.setObjectName("PageTitle")
 
@@ -166,33 +67,22 @@ class MicrophoneGuardPage(BasePage):
         self.subtitle_label.setObjectName("MutedText")
         self.subtitle_label.setWordWrap(True)
 
-        # ── Guard Status Panel (info only – NO button) ───────────────
-        self.status_panel = QFrame()
-        self.status_panel.setObjectName("Panel")
-        status_layout = QVBoxLayout(self.status_panel)
-        status_layout.setContentsMargins(18, 18, 18, 18)
-        status_layout.setSpacing(8)
+        header_left.addWidget(self.title_label)
+        header_left.addWidget(self.subtitle_label)
+        header_row.addLayout(header_left, 1)
 
-        self.status_value = QLabel()
-        self.status_value.setObjectName("CardValue")
+        root.addLayout(header_row)
 
-        self.status_hint = QLabel()
-        self.status_hint.setObjectName("MutedText")
-        self.status_hint.setWordWrap(True)
-
-        status_layout.addWidget(self.status_value)
-        status_layout.addWidget(self.status_hint)
-
-        # ── Microphones Panel ────────────────────────────────────────
+        # ── Microphones Selection Panel ──────────────────────────────
         self.mics_panel = QFrame()
-        self.mics_panel.setObjectName("GuardModePanel")
+        self.mics_panel.setObjectName("ModernPanel")
         mics_layout = QVBoxLayout(self.mics_panel)
-        mics_layout.setContentsMargins(16, 14, 16, 14)
-        mics_layout.setSpacing(10)
+        mics_layout.setContentsMargins(18, 16, 18, 16)
+        mics_layout.setSpacing(12)
 
         mics_header_row = QHBoxLayout()
         self.mics_panel_title = QLabel()
-        self.mics_panel_title.setObjectName("GuardModeTitle")
+        self.mics_panel_title.setObjectName("ModernSectionHeader")
         mics_header_row.addWidget(self.mics_panel_title)
         mics_header_row.addStretch()
 
@@ -210,26 +100,56 @@ class MicrophoneGuardPage(BasePage):
         mics_layout.addWidget(self.mics_hint_label)
 
         self.active_mics_row = QHBoxLayout()
-        self.active_mics_row.setSpacing(8)
+        self.active_mics_row.setSpacing(10)
         mics_layout.addLayout(self.active_mics_row)
 
-        # ── Device Config Panel (shown when a mic is selected) ────────
+        # ── Device Config Panel (Volume & Targets) ───────────────────
         self.level_panel = QFrame()
-        self.level_panel.setObjectName("Panel")
+        self.level_panel.setObjectName("ModernPanel")
         level_layout = QVBoxLayout(self.level_panel)
-        level_layout.setContentsMargins(18, 18, 18, 18)
-        level_layout.setSpacing(12)
+        level_layout.setContentsMargins(18, 16, 18, 16)
+        level_layout.setSpacing(14)
 
-        # Device name label only (no extra toggle button here)
         self.selected_device_label = QLabel()
-        self.selected_device_label.setObjectName("SectionTitle")
+        self.selected_device_label.setObjectName("ModernSectionHeader")
+        level_layout.addWidget(self.selected_device_label)
 
-        self.current_level_label = QLabel()
-        self.current_level_label.setObjectName("MutedText")
+        # Side-by-Side metric cards (Current Volume vs Target Volume)
+        metrics_row = QHBoxLayout()
+        metrics_row.setSpacing(14)
 
-        self.target_level_label = QLabel()
-        self.target_level_label.setObjectName("MutedText")
+        # Current Volume Card
+        self.current_vol_card = QFrame()
+        self.current_vol_card.setObjectName("VolumeMetricCard")
+        curr_layout = QVBoxLayout(self.current_vol_card)
+        curr_layout.setContentsMargins(12, 10, 12, 10)
+        curr_layout.setSpacing(4)
+        self.current_caption = QLabel()
+        self.current_caption.setObjectName("VolumeMetricCaption")
+        self.current_val_label = QLabel("0%")
+        self.current_val_label.setObjectName("VolumeMetricValue")
+        curr_layout.addWidget(self.current_caption)
+        curr_layout.addWidget(self.current_val_label)
+        metrics_row.addWidget(self.current_vol_card, 1)
 
+        # Target Volume Card
+        self.target_vol_card = QFrame()
+        self.target_vol_card.setObjectName("VolumeMetricCard")
+        target_card_layout = QVBoxLayout(self.target_vol_card)
+        target_card_layout.setContentsMargins(12, 10, 12, 10)
+        target_card_layout.setSpacing(4)
+        self.target_caption = QLabel()
+        self.target_caption.setObjectName("VolumeMetricCaption")
+        self.target_val_label = QLabel("80%")
+        self.target_val_label.setObjectName("VolumeMetricValue")
+        self.target_val_label.setProperty("accent", "true")
+        target_card_layout.addWidget(self.target_caption)
+        target_card_layout.addWidget(self.target_val_label)
+        metrics_row.addWidget(self.target_vol_card, 1)
+
+        level_layout.addLayout(metrics_row)
+
+        # Target Slider
         self.target_slider = QSlider(Qt.Horizontal)
         self.target_slider.setMinimum(0)
         self.target_slider.setMaximum(100)
@@ -237,30 +157,36 @@ class MicrophoneGuardPage(BasePage):
         self.target_slider.sliderPressed.connect(self.on_target_edit_started)
         self.target_slider.sliderMoved.connect(self.on_target_preview_changed)
         self.target_slider.sliderReleased.connect(self.on_target_committed)
+        level_layout.addWidget(self.target_slider)
 
+        # Action Buttons: Set target to current & Restore now
         action_row = QHBoxLayout()
-        action_row.setSpacing(12)
+        action_row.setSpacing(10)
+
+        self.set_target_to_current_btn = QPushButton()
+        self.set_target_to_current_btn.setObjectName("SmallSecondaryButton")
+        self.set_target_to_current_btn.setCursor(Qt.PointingHandCursor)
+        self.set_target_to_current_btn.clicked.connect(self.on_set_target_to_current)
+
         self.restore_button = QPushButton()
-        self.restore_button.setFocusPolicy(Qt.StrongFocus)
+        self.restore_button.setObjectName("SmallPrimaryButton")
+        self.restore_button.setCursor(Qt.PointingHandCursor)
         self.restore_button.clicked.connect(self.on_restore_target)
+
+        action_row.addWidget(self.set_target_to_current_btn)
         action_row.addWidget(self.restore_button)
         action_row.addStretch()
-
-        level_layout.addWidget(self.selected_device_label)
-        level_layout.addWidget(self.current_level_label)
-        level_layout.addWidget(self.target_level_label)
-        level_layout.addWidget(self.target_slider)
         level_layout.addLayout(action_row)
 
         # ── Activity Panel ───────────────────────────────────────────
         self.guard_panel = QFrame()
-        self.guard_panel.setObjectName("Panel")
+        self.guard_panel.setObjectName("ModernPanel")
         guard_layout = QVBoxLayout(self.guard_panel)
-        guard_layout.setContentsMargins(18, 18, 18, 18)
+        guard_layout.setContentsMargins(18, 16, 18, 16)
         guard_layout.setSpacing(8)
 
         self.guard_title = QLabel()
-        self.guard_title.setObjectName("SectionTitle")
+        self.guard_title.setObjectName("ModernSectionHeader")
 
         self.guard_info = QLabel()
         self.guard_info.setObjectName("MutedText")
@@ -275,9 +201,6 @@ class MicrophoneGuardPage(BasePage):
         guard_layout.addWidget(self.last_correction_label)
 
         # ── Assemble ─────────────────────────────────────────────────
-        root.addWidget(self.title_label)
-        root.addWidget(self.subtitle_label)
-        root.addWidget(self.status_panel)
         root.addWidget(self.mics_panel)
         root.addWidget(self.level_panel)
         root.addWidget(self.guard_panel)
@@ -294,12 +217,12 @@ class MicrophoneGuardPage(BasePage):
     # ─────────────────────────────────────────────────────────────────
     # Toast
     # ─────────────────────────────────────────────────────────────────
-
+    def show_toast(self, message: str) -> None:
+        self.toast.show_message(message)
 
     # ─────────────────────────────────────────────────────────────────
     # Mic interactions
     # ─────────────────────────────────────────────────────────────────
-
     def on_mic_tag_select(self, device) -> None:
         """Single click on un-selected mic → select it."""
         self._config_device_id = device.device_id
@@ -339,7 +262,7 @@ class MicrophoneGuardPage(BasePage):
 
     def on_target_preview_changed(self, value: int) -> None:
         self._pending_target_value = value
-        self.target_level_label.setText(t("microphone_guard.target_volume", level=value))
+        self.target_val_label.setText(f"{value}%")
 
     def on_target_committed(self) -> None:
         value = self._pending_target_value
@@ -350,6 +273,19 @@ class MicrophoneGuardPage(BasePage):
         device_id = self._config_device_id or "default-capture"
         self.controller.set_target_level(device_id, value)
         self.show_toast(t("microphone_guard.toast_target_saved", level=value))
+        self._do_refresh()
+
+    def on_set_target_to_current(self) -> None:
+        """Set target volume to match the current microphone volume."""
+        device_id = self._config_device_id or "default-capture"
+        device = self.context.microphone_guard_service.get_device(device_id)
+        if device is None:
+            self.show_toast(t("microphone_guard.toast_no_mic"))
+            return
+        current_level = int(device.current_level)
+        self.controller.set_target_level(device_id, current_level)
+        self.show_toast(t("microphone_guard.toast_target_saved", level=current_level))
+        self._do_refresh()
 
     def on_restore_target(self) -> None:
         device_id = self._config_device_id or "default-capture"
@@ -402,7 +338,6 @@ class MicrophoneGuardPage(BasePage):
     # ─────────────────────────────────────────────────────────────────
     # Refresh
     # ─────────────────────────────────────────────────────────────────
-
     def _clear_mic_tags(self) -> None:
         while self.active_mics_row.count():
             item = self.active_mics_row.takeAt(0)
@@ -417,7 +352,7 @@ class MicrophoneGuardPage(BasePage):
         self._do_refresh()
 
     def _do_refresh(self) -> None:
-        """Core UI refresh – never touches window geometry."""
+        """Core UI refresh."""
         self.title_label.setText(t("microphone_guard.page_title"))
         self.subtitle_label.setText(t("microphone_guard.page_subtitle"))
 
@@ -429,18 +364,8 @@ class MicrophoneGuardPage(BasePage):
         if self._config_device_id is None:
             self._config_device_id = selected_id
 
-        # ── Status panel (info only) ──────────────────────────────
-        if global_enabled:
-            self.status_value.setText(t("microphone_guard.status_title_active"))
-            self.status_value.setProperty("role", "success")
-            self.status_hint.setText(t("microphone_guard.status_desc_active"))
-        else:
-            self.status_value.setText(t("microphone_guard.status_title_inactive"))
-            self.status_value.setProperty("role", "neutral")
-            self.status_hint.setText(t("microphone_guard.status_desc_inactive"))
-
-        # ── Mics panel header ─────────────────────────────────────
-        self.mics_panel_title.setText("🎙 " + t("microphone_guard.active_mics_title"))
+        # ── Mics panel header ─────────────────────────────────────────
+        self.mics_panel_title.setText(t("microphone_guard.active_mics_title"))
         self.mics_hint_label.setText(t("microphone_guard.mics_hint"))
 
         if global_enabled:
@@ -451,7 +376,7 @@ class MicrophoneGuardPage(BasePage):
             self.toggle_all_button.setObjectName("SmallPrimaryButton")
         self.repolish(self.toggle_all_button)
 
-        # ── Mic tags ──────────────────────────────────────────────
+        # ── Mic tags ──────────────────────────────────────────────────
         self._clear_mic_tags()
         for d in devices:
             is_active = svc.is_device_guard_enabled(d.device_id)
@@ -465,7 +390,12 @@ class MicrophoneGuardPage(BasePage):
             self.active_mics_row.addWidget(tag)
         self.active_mics_row.addStretch()
 
-        # ── Config panel ──────────────────────────────────────────
+        # ── Config panel ──────────────────────────────────────────────
+        self.current_caption.setText(t("microphone_guard.current_volume_title"))
+        self.target_caption.setText(t("microphone_guard.target_volume_title"))
+        self.set_target_to_current_btn.setText(t("microphone_guard.button_sync_target_to_current"))
+        self.restore_button.setText(t("microphone_guard.button_restore"))
+
         device = svc.get_device(self._config_device_id) if self._config_device_id else None
         if device is None and devices:
             device = devices[0]
@@ -473,43 +403,50 @@ class MicrophoneGuardPage(BasePage):
 
         if device is None:
             self.selected_device_label.setText(t("microphone_guard.status_title_unavailable"))
+            self.current_val_label.setText("–")
+            self.target_val_label.setText("–")
+            self.set_target_to_current_btn.setEnabled(False)
             self.restore_button.setEnabled(False)
             self.target_slider.setEnabled(False)
-            self.repolish(self.status_value)
             return
 
+        self.set_target_to_current_btn.setEnabled(True)
         self.restore_button.setEnabled(True)
         self.target_slider.setEnabled(True)
 
-        icon = _get_mic_icon(device.display_name, device.is_default)
+        icon = get_mic_icon(device.display_name, device.is_default)
         suffix = f" ({t('microphone_guard.default_label')})" if device.is_default else ""
         self.selected_device_label.setText(
             t("microphone_guard.config_device_label", icon=icon, name=device.display_name + suffix)
         )
 
-        self.current_level_label.setText(
-            t("microphone_guard.current_volume", level=device.current_level)
-        )
+        self.current_val_label.setText(f"{device.current_level}%")
 
         shown_target = (
             self._pending_target_value
             if self._editing_target and self._pending_target_value is not None
             else device.target_level
         )
-        self.target_level_label.setText(t("microphone_guard.target_volume", level=shown_target))
+        self.target_val_label.setText(f"{shown_target}%")
 
         if not self._editing_target:
             self.target_slider.blockSignals(True)
             self.target_slider.setValue(device.target_level)
             self.target_slider.blockSignals(False)
 
-        self.restore_button.setText(t("microphone_guard.button_restore"))
-
-        # ── Activity panel ────────────────────────────────────────
+        # ── Activity panel ────────────────────────────────────────────
         self.guard_title.setText(t("microphone_guard.activity_title"))
         self.guard_info.setText(t("microphone_guard.activity_desc"))
-        self.last_correction_label.setText(
-            t("microphone_guard.last_correction", time=svc.get_last_correction_text())
-        )
 
-        self.repolish(self.status_value, self.last_correction_label)
+        time_text = svc.get_last_correction_text()
+        from_lvl, to_lvl = svc.get_last_correction_levels()
+        if time_text and time_text != "–" and from_lvl is not None and to_lvl is not None:
+            self.last_correction_label.setText(
+                t("microphone_guard.last_correction_detail", time=time_text, previous=from_lvl, target=to_lvl)
+            )
+        else:
+            self.last_correction_label.setText(
+                t("microphone_guard.last_correction", time=time_text)
+            )
+
+        self.repolish(self.last_correction_label)

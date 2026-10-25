@@ -1,4 +1,3 @@
-import time
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import (
     QComboBox,
@@ -14,8 +13,8 @@ from PySide6.QtWidgets import (
 
 from useful_utilities_collection.core.translation import t
 from useful_utilities_collection.modules.input_lock.controller import InputLockController
+from useful_utilities_collection.modules.input_lock.countdown_manager import CountdownLockManager
 from useful_utilities_collection.ui.components import BasePage
-
 
 _COUNTDOWN_PRESETS = [
     30,
@@ -29,8 +28,16 @@ class InputLockPage(BasePage):
     def __init__(self, context):
         super().__init__(context)
         self.controller = InputLockController(context)
+        self.countdown_manager = CountdownLockManager(self.controller, self)
 
+        self._build_ui()
+        self._setup_timers()
+        self._setup_events()
 
+        self.refresh()
+
+    # ── UI Layout Construction ─────────────────────────────────────────
+    def _build_ui(self) -> None:
         root = QVBoxLayout(self)
         root.setContentsMargins(28, 28, 28, 28)
         root.setSpacing(16)
@@ -42,8 +49,24 @@ class InputLockPage(BasePage):
         self.subtitle_label.setObjectName("MutedText")
         self.subtitle_label.setWordWrap(True)
 
+        self._build_overview_panel()
+        self._build_countdown_panel()
+        self._build_manual_panels()
 
+        panels = QGridLayout()
+        panels.setHorizontalSpacing(16)
+        panels.setVerticalSpacing(16)
+        panels.addWidget(self.keyboard_panel, 0, 0)
+        panels.addWidget(self.mouse_panel, 0, 1)
 
+        root.addWidget(self.title_label)
+        root.addWidget(self.subtitle_label)
+        root.addWidget(self.overview_panel)
+        root.addWidget(self.countdown_panel)
+        root.addLayout(panels)
+        root.addStretch()
+
+    def _build_overview_panel(self) -> None:
         self.overview_panel = self._create_panel()
         overview_layout = QVBoxLayout(self.overview_panel)
         overview_layout.setContentsMargins(18, 18, 18, 18)
@@ -68,7 +91,7 @@ class InputLockPage(BasePage):
         overview_layout.addWidget(self.overview_hint)
         overview_layout.addWidget(self.overview_emergency_label)
 
-        # ── Countdown / Timer panel ────────────────────────────────────
+    def _build_countdown_panel(self) -> None:
         self.countdown_panel = self._create_panel()
         countdown_layout = QVBoxLayout(self.countdown_panel)
         countdown_layout.setContentsMargins(18, 18, 18, 18)
@@ -89,7 +112,6 @@ class InputLockPage(BasePage):
         header_row.addWidget(self.countdown_badge)
         header_row.addStretch()
 
-        # ── Warning Box for Timed Lock ──────────────────────────────────
         self.countdown_warning_box = QFrame()
         self.countdown_warning_box.setObjectName("TimerWarningBox")
         warning_layout = QVBoxLayout(self.countdown_warning_box)
@@ -107,7 +129,6 @@ class InputLockPage(BasePage):
         warning_layout.addWidget(self.countdown_warning_title)
         warning_layout.addWidget(self.countdown_warning_text)
 
-        # ── Preset selection row ───────────────────────────────────────
         action_row = QHBoxLayout()
         action_row.setContentsMargins(0, 0, 0, 0)
         action_row.setSpacing(8)
@@ -124,14 +145,13 @@ class InputLockPage(BasePage):
 
         self.countdown_stop_button = QPushButton()
         self.countdown_stop_button.setObjectName("DangerButton")
-        self.countdown_stop_button.clicked.connect(self._on_stop_countdown)
+        self.countdown_stop_button.clicked.connect(self.countdown_manager.stop)
         self.countdown_stop_button.hide()
 
         action_row.addWidget(self.countdown_preset_combo)
         action_row.addWidget(self.countdown_start_button)
         action_row.addWidget(self.countdown_stop_button)
 
-        # ── Custom duration row (settings-style) ──────────────────────
         self.countdown_custom_container = QFrame()
         self.countdown_custom_container.setObjectName("Panel")
         custom_row = QHBoxLayout(self.countdown_custom_container)
@@ -140,10 +160,8 @@ class InputLockPage(BasePage):
 
         self.countdown_custom_label = QLabel()
         self.countdown_custom_spin = QSpinBox()
-        self.countdown_custom_spin.setRange(1, 9999)
-        self.countdown_custom_spin.setValue(30)
-        self.countdown_custom_spin.setSuffix(" s")
-        self.countdown_custom_spin.setMinimumWidth(100)
+        self.countdown_custom_spin.setRange(1, 999)
+        self.countdown_custom_spin.setValue(45)
 
         self.countdown_unit_combo = QComboBox()
         self.countdown_unit_combo.addItems([
@@ -155,17 +173,15 @@ class InputLockPage(BasePage):
         self.countdown_unit_combo.currentIndexChanged.connect(self._on_unit_changed)
 
         custom_row.addWidget(self.countdown_custom_label)
-        custom_row.addStretch()
         custom_row.addWidget(self.countdown_custom_spin)
         custom_row.addWidget(self.countdown_unit_combo)
+        custom_row.addStretch()
 
-        # ── Timer display panel (premium design) ──────────────────────
         self.timer_display_panel = QFrame()
-        self.timer_display_panel.setObjectName("TimerDisplayPanel")
+        self.timer_display_panel.setObjectName("TimerDisplayBox")
         timer_layout = QVBoxLayout(self.timer_display_panel)
-        timer_layout.setContentsMargins(24, 20, 24, 20)
+        timer_layout.setContentsMargins(16, 16, 16, 16)
         timer_layout.setSpacing(6)
-        timer_layout.setAlignment(Qt.AlignCenter)
 
         self.timer_countdown_label = QLabel()
         self.timer_countdown_label.setObjectName("TimerCountdown")
@@ -183,7 +199,6 @@ class InputLockPage(BasePage):
         timer_layout.addWidget(self.timer_info_label)
         timer_layout.addWidget(self.timer_emergency_label)
 
-        # ── Assemble countdown panel ──────────────────────────────────
         countdown_layout.addLayout(header_row)
         countdown_layout.addWidget(self.countdown_warning_box)
         countdown_layout.addLayout(action_row)
@@ -193,6 +208,7 @@ class InputLockPage(BasePage):
         self.countdown_custom_container.hide()
         self.timer_display_panel.hide()
 
+    def _build_manual_panels(self) -> None:
         self.keyboard_panel = self._create_panel()
         keyboard_layout = QVBoxLayout(self.keyboard_panel)
         keyboard_layout.setContentsMargins(18, 18, 18, 18)
@@ -210,13 +226,13 @@ class InputLockPage(BasePage):
 
         self.keyboard_button = QPushButton()
         self.keyboard_button.setObjectName("PrimaryButton")
-        self.keyboard_button.setFocusPolicy(Qt.StrongFocus)
         self.keyboard_button.clicked.connect(self.on_toggle_keyboard)
 
         keyboard_layout.addWidget(self.keyboard_title)
         keyboard_layout.addWidget(self.keyboard_status)
         keyboard_layout.addWidget(self.keyboard_hint)
         keyboard_layout.addWidget(self.keyboard_button)
+        keyboard_layout.addStretch()
 
         self.mouse_panel = self._create_panel()
         mouse_layout = QVBoxLayout(self.mouse_panel)
@@ -235,90 +251,72 @@ class InputLockPage(BasePage):
 
         self.mouse_button = QPushButton()
         self.mouse_button.setObjectName("PrimaryButton")
-        self.mouse_button.setFocusPolicy(Qt.StrongFocus)
         self.mouse_button.clicked.connect(self.on_toggle_mouse)
 
         mouse_layout.addWidget(self.mouse_title)
         mouse_layout.addWidget(self.mouse_status)
         mouse_layout.addWidget(self.mouse_hint)
         mouse_layout.addWidget(self.mouse_button)
-
-        panels = QGridLayout()
-        panels.setHorizontalSpacing(16)
-        panels.setVerticalSpacing(16)
-        panels.addWidget(self.keyboard_panel, 0, 0)
-        panels.addWidget(self.mouse_panel, 0, 1)
-
-        root.addWidget(self.title_label)
-        root.addWidget(self.subtitle_label)
-        root.addWidget(self.overview_panel)
-        root.addWidget(self.countdown_panel)
-        root.addLayout(panels)
-        root.addStretch()
-
-        self.mouse_enforce_timer = QTimer(self)
-        self.mouse_enforce_timer.timeout.connect(self.on_mouse_enforce_tick)
-        self.mouse_enforce_timer.start(50)
-
-        self._countdown_timer = QTimer(self)
-        self._countdown_timer.timeout.connect(self._on_countdown_tick)
-        self._countdown_end = None
-
-        self.context.input_lock_service.state.changed.connect(self.refresh)
-        self.context.state_changed.connect(self.refresh)
-        self.refresh()
+        mouse_layout.addStretch()
 
     def _create_panel(self) -> QFrame:
         panel = QFrame()
         panel.setObjectName("Panel")
         return panel
 
+    # ── Event & Timer Wiring ──────────────────────────────────────────
+    def _setup_timers(self) -> None:
+        self.mouse_enforce_timer = QTimer(self)
+        self.mouse_enforce_timer.timeout.connect(self.on_mouse_enforce_tick)
+        self.mouse_enforce_timer.start(50)
 
+    def _setup_events(self) -> None:
+        self.countdown_manager.tick.connect(self._on_manager_tick)
+        self.countdown_manager.started.connect(self._on_manager_started)
+        self.countdown_manager.completed.connect(self._on_manager_completed)
+        self.countdown_manager.stopped.connect(self._on_manager_stopped)
+
+        self.context.input_lock_service.state.changed.connect(self.refresh)
+        self.context.state_changed.connect(self.refresh)
+        self.context.input_lock_service.add_emergency_unlock_callback(self._handle_emergency_unlock)
+
+    # ── Handlers ──────────────────────────────────────────────────────
+    def _handle_emergency_unlock(self) -> None:
+        if self.countdown_manager.is_active:
+            self.countdown_manager.stop()
+        self.controller.unlock_all()
+        self.show_toast(t("input_lock.toast_emergency_unlock"))
+        self.refresh()
 
     def on_mouse_enforce_tick(self) -> None:
         self.controller.enforce()
-
         mouse_service = self.context.input_lock_service.mouse_lock_service
-
-        # Emergency hotkey ONLY unlocks standalone mouse lock (never active during timed lock or keyboard lock)
         if mouse_service.consume_emergency_unlock_request():
-            if not self._countdown_timer.isActive() and not self.context.input_lock_service.keyboard_locked():
-                self.context.input_lock_service.unlock_mouse()
-                self.show_toast(t("input_lock.toast_emergency_unlock"))
+            self._handle_emergency_unlock()
 
     def on_toggle_keyboard(self) -> None:
-        if self._countdown_timer.isActive():
+        if self.countdown_manager.is_active:
             return
         service = self.context.input_lock_service
         was_locked = service.keyboard_locked()
-        mouse_was_locked = service.mouse_locked()
-
         self.controller.toggle_keyboard_lock()
 
         if was_locked:
             self.show_toast(t("input_lock.toast_keyboard_disabled"))
         else:
-            if mouse_was_locked:
-                self.show_toast(t("input_lock.toast_mouse_unlocked_keyboard_enabled"))
-            else:
-                self.show_toast(t("input_lock.toast_keyboard_enabled"))
+            self.show_toast(t("input_lock.toast_keyboard_enabled"))
 
     def on_toggle_mouse(self) -> None:
-        if self._countdown_timer.isActive():
+        if self.countdown_manager.is_active:
             return
         service = self.context.input_lock_service
         was_locked = service.mouse_locked()
-        keyboard_was_locked = service.keyboard_locked()
-
         self.controller.toggle_mouse_lock()
 
         if was_locked:
             self.show_toast(t("input_lock.toast_mouse_disabled"))
         else:
-            if keyboard_was_locked:
-                self.show_toast(t("input_lock.toast_keyboard_unlocked_mouse_enabled"))
-            else:
-                self.show_toast(t("input_lock.toast_mouse_enabled"))
+            self.show_toast(t("input_lock.toast_mouse_enabled"))
 
     def _on_preset_changed(self, index: int) -> None:
         is_custom = self.countdown_preset_combo.currentData() == "custom"
@@ -337,35 +335,35 @@ class InputLockPage(BasePage):
             return value * multipliers[unit_index]
         return data
 
-    def _localized_duration(self, seconds: int) -> str:
-        if seconds >= 3600:
-            hours = seconds / 3600
-            if seconds % 3600 == 0:
-                value = int(hours)
-                unit = t("input_lock.countdown_unit_hour") if value == 1 else t("input_lock.countdown_unit_hours")
-                return f"{value} {unit}"
-            unit = t("input_lock.countdown_unit_hours")
-            return f"{hours:.1f} {unit}"
-        if seconds >= 60:
-            minutes = seconds / 60
-            if seconds % 60 == 0:
-                value = int(minutes)
-                unit = t("input_lock.countdown_unit_minute") if value == 1 else t("input_lock.countdown_unit_minutes")
-                return f"{value} {unit}"
-            unit = t("input_lock.countdown_unit_minutes")
-            return f"{minutes:.1f} {unit}"
-        value = seconds
-        unit = t("input_lock.countdown_unit_second") if value == 1 else t("input_lock.countdown_unit_seconds")
-        return f"{value} {unit}"
+    def _on_start_countdown(self) -> None:
+        duration = self._get_duration_seconds()
+        if duration:
+            self.countdown_manager.start(duration)
 
-    def _format_time(self, seconds: int) -> str:
-        minutes, sec = divmod(seconds, 60)
-        hours, minutes = divmod(minutes, 60)
-        if hours > 0:
-            return f"{hours:d}:{minutes:02d}:{sec:02d}"
-        return f"{minutes:d}:{sec:02d}"
+    def _on_manager_started(self, duration: int, duration_text: str) -> None:
+        self._show_running_state()
+        self.show_toast(t("input_lock.countdown_started", duration=duration_text))
+        self.refresh()
 
-    def _show_running_state(self, duration_text: str) -> None:
+    def _on_manager_tick(self, remaining: int) -> None:
+        self.timer_countdown_label.setText(self.countdown_manager.format_clock(remaining))
+
+    def _on_manager_completed(self) -> None:
+        self._show_idle_state()
+        self.show_toast(t("input_lock.countdown_complete"))
+        self.refresh()
+
+    def _on_manager_stopped(self) -> None:
+        self._show_idle_state()
+        self.show_toast(t("input_lock.countdown_stopped"))
+        self.refresh()
+
+    def _build_preset_label(self, data) -> str:
+        if data == "custom":
+            return t("input_lock.countdown_preset_custom")
+        return self.countdown_manager.format_duration(data)
+
+    def _show_running_state(self) -> None:
         self.countdown_preset_combo.setEnabled(False)
         self.countdown_custom_container.setEnabled(False)
         self.countdown_start_button.hide()
@@ -373,10 +371,12 @@ class InputLockPage(BasePage):
         self.countdown_badge.setText(t("input_lock.countdown_active_badge"))
         self.countdown_badge.show()
 
-        # Show the premium timer display panel
         self.timer_display_panel.show()
         self.timer_info_label.hide()
-        self.timer_emergency_label.hide()
+        settings = self.context.settings_service
+        shortcut_text = settings.get_mouse_lock_hotkey() if settings else "Shift+Alt+M"
+        self.timer_emergency_label.setText(t("input_lock.emergency_hint", shortcut=shortcut_text))
+        self.timer_emergency_label.show()
 
         self.keyboard_button.setEnabled(False)
         self.mouse_button.setEnabled(False)
@@ -386,51 +386,12 @@ class InputLockPage(BasePage):
         self.countdown_custom_container.setEnabled(True)
         self.countdown_start_button.show()
         self.countdown_stop_button.hide()
-        self.timer_display_panel.hide()
-        self.timer_countdown_label.setText("")
-        self.timer_info_label.hide()
-        self.timer_emergency_label.hide()
         self.countdown_badge.hide()
-        self._countdown_end = None
+        self.timer_display_panel.hide()
         self.keyboard_button.setEnabled(True)
         self.mouse_button.setEnabled(True)
 
-    def _on_start_countdown(self) -> None:
-        duration = self._get_duration_seconds()
-        if duration is None:
-            return
-
-        self._countdown_end = time.time() + duration
-        self.controller.lock_both()
-        self._countdown_timer.start(1000)
-        self._on_countdown_tick()
-        self._show_running_state(self._localized_duration(duration))
-        self.show_toast(t("input_lock.countdown_started", duration=self._localized_duration(duration)))
-        self.refresh()
-
-    def _on_stop_countdown(self) -> None:
-        self._countdown_timer.stop()
-        self._countdown_end = None
-        self.controller.unlock_both()
-        self._show_idle_state()
-        self.show_toast(t("input_lock.countdown_stopped"))
-
-    def _on_countdown_tick(self) -> None:
-        remaining = max(0, int(self._countdown_end - time.time()))
-        if remaining <= 0:
-            self._countdown_timer.stop()
-            self._countdown_end = None
-            self.controller.unlock_both()
-            self._show_idle_state()
-            self.show_toast(t("input_lock.countdown_complete"))
-            return
-        self.timer_countdown_label.setText(self._format_time(remaining))
-
-    def _build_preset_label(self, data) -> str:
-        if data == "custom":
-            return t("input_lock.countdown_preset_custom")
-        return self._localized_duration(data)
-
+    # ── Refresh & Retranslate ─────────────────────────────────────────
     def refresh(self) -> None:
         self.title_label.setText(t("input_lock.page_title"))
         self.subtitle_label.setText(t("input_lock.page_subtitle"))
@@ -458,8 +419,6 @@ class InputLockPage(BasePage):
         if 0 <= current_unit_index < self.countdown_unit_combo.count():
             self.countdown_unit_combo.setCurrentIndex(current_unit_index)
         self.countdown_unit_combo.blockSignals(False)
-        suffixes = [" s", " min", " h"]
-        self.countdown_custom_spin.setSuffix(suffixes[current_unit_index] if 0 <= current_unit_index < len(suffixes) else "")
 
         current_data = self.countdown_preset_combo.currentData()
         self.countdown_preset_combo.blockSignals(True)
@@ -482,45 +441,37 @@ class InputLockPage(BasePage):
         mouse_locked = state.mouse_locked()
 
         self.keyboard_status.setText(
-            t("input_lock.status_keyboard_locked")
-            if keyboard_locked
-            else t("input_lock.status_unlocked")
+            t("input_lock.status_keyboard_locked") if keyboard_locked else t("input_lock.status_unlocked")
         )
         self.keyboard_status.setProperty("role", "danger" if keyboard_locked else "success")
 
         self.mouse_status.setText(
-            t("input_lock.status_mouse_locked")
-            if mouse_locked
-            else t("input_lock.status_unlocked")
+            t("input_lock.status_mouse_locked") if mouse_locked else t("input_lock.status_unlocked")
         )
         self.mouse_status.setProperty("role", "danger" if mouse_locked else "success")
 
         self.keyboard_button.setText(
-            t("input_lock.keyboard_button_unlock")
-            if keyboard_locked
-            else t("input_lock.keyboard_button_lock")
+            t("input_lock.keyboard_button_unlock") if keyboard_locked else t("input_lock.keyboard_button_lock")
         )
         self.mouse_button.setText(
-            t("input_lock.mouse_button_unlock")
-            if mouse_locked
-            else t("input_lock.mouse_button_lock")
+            t("input_lock.mouse_button_unlock") if mouse_locked else t("input_lock.mouse_button_lock")
         )
 
+        active_countdown = self.countdown_manager.is_active
         if keyboard_locked and mouse_locked:
             self.overview_status.setText(t("input_lock.status_both_locked"))
             self.overview_status.setProperty("role", "danger")
-            if self._countdown_timer.isActive():
+            if active_countdown:
                 self.overview_hint.setText(t("input_lock.countdown_unlock_instructions"))
-                self.overview_emergency_label.setText("")
             else:
                 self.overview_hint.setText(t("input_lock.status_hint_both"))
-                self.overview_emergency_label.setText(t("input_lock.status_emergency_disabled"))
-        elif keyboard_locked and not self._countdown_timer.isActive():
+            self.overview_emergency_label.setText(t("input_lock.emergency_hint", shortcut=shortcut_text))
+        elif keyboard_locked and not active_countdown:
             self.overview_status.setText(t("input_lock.status_keyboard_locked"))
             self.overview_status.setProperty("role", "danger")
             self.overview_hint.setText(t("input_lock.status_hint_keyboard"))
-            self.overview_emergency_label.setText("")
-        elif mouse_locked and not self._countdown_timer.isActive():
+            self.overview_emergency_label.setText(t("input_lock.emergency_hint", shortcut=shortcut_text))
+        elif mouse_locked and not active_countdown:
             self.overview_status.setText(t("input_lock.status_mouse_locked"))
             self.overview_status.setProperty("role", "danger")
             self.overview_hint.setText(t("input_lock.status_hint_mouse"))
@@ -537,15 +488,8 @@ class InputLockPage(BasePage):
         keyboard_locked = self.context.input_lock_service.state.keyboard_locked()
         mouse_locked = self.context.input_lock_service.state.mouse_locked()
 
-        if keyboard_locked:
-            self.keyboard_button.setObjectName("DangerButton")
-        else:
-            self.keyboard_button.setObjectName("PrimaryButton")
-
-        if mouse_locked:
-            self.mouse_button.setObjectName("DangerButton")
-        else:
-            self.mouse_button.setObjectName("PrimaryButton")
+        self.keyboard_button.setObjectName("DangerButton" if keyboard_locked else "PrimaryButton")
+        self.mouse_button.setObjectName("DangerButton" if mouse_locked else "PrimaryButton")
 
         widgets = [
             self.overview_status,

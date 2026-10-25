@@ -77,18 +77,16 @@ class TestSettingsService(unittest.TestCase):
         self.assertEqual(self.mock_settings_data["notifications/notify_on_minimize"], False)
 
     @patch('sys.platform', 'win32')
-    @patch('useful_utilities_collection.services.autostart_service.winreg.CloseKey')
     @patch('useful_utilities_collection.services.autostart_service.winreg.OpenKey')
     @patch('useful_utilities_collection.services.autostart_service.winreg.QueryValueEx')
     @patch('os.path.exists')
-    def test_is_startup_enabled_win32(self, mock_exists, mock_query, mock_open, mock_close):
+    def test_is_startup_enabled_win32(self, mock_exists, mock_query, mock_open):
         # Mock winreg behavior for win32
         mock_query.return_value = ("some_cmd", 1)
         mock_exists.return_value = False
         service = SettingsService()
         self.assertTrue(service.is_startup_enabled())
         mock_open.assert_called_once()
-        mock_close.assert_called_once()
 
     @patch('sys.platform', 'win32')
     @patch('useful_utilities_collection.services.autostart_service.winreg.OpenKey', side_effect=WindowsError)

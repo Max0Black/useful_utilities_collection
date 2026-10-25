@@ -1,5 +1,4 @@
 from PySide6.QtCore import QTimer, Qt
-from PySide6.QtGui import QKeySequence
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -13,160 +12,26 @@ from PySide6.QtWidgets import (
 
 from useful_utilities_collection.core.translation import get_available_languages, set_language, t
 from useful_utilities_collection.ui.components import BasePage
-
-
-
-class LiveHotkeyEdit(QLabel):
-    """A clickable label that captures a key combination in real time.
-
-    Usage:
-    - Click the label to start recording.
-    - Press the desired key combo (modifiers + key).  The display updates live.
-    - Click away (focus loss) to SAVE the recorded combo.
-    - Press Escape to CANCEL and keep the old value.
-    """
-
-    def __init__(self, on_saved, parent=None):
-        super().__init__(parent)
-        self._on_saved = on_saved
-        self._pressed_keys: set[Qt.Key] = set()
-        self._modifier_map = {
-            Qt.Key_Control: "Ctrl",
-            Qt.Key_Alt: "Alt",
-            Qt.Key_Shift: "Shift",
-            Qt.Key_Meta: "Meta",
-        }
-        self._capturing = False
-        self._current_sequence = ""  # the last SAVED value
-        self._recorded_sequence = ""  # live value while capturing
-        self.setFocusPolicy(Qt.StrongFocus)
-        self.setCursor(Qt.IBeamCursor)
-        self.setObjectName("HotkeyEditLabel")
-        self.setMinimumWidth(200)
-        self.setFixedHeight(36)
-        self.setAlignment(Qt.AlignCenter)
-        self._style_idle()
-        self._update_placeholder()
-
-    # ── Styling ───────────────────────────────────────────────────────
-    def _style_idle(self) -> None:
-        self.setStyleSheet(
-            "border: 1px solid #3a4552; border-radius: 8px; "
-            "background: #1a2030; color: #e6edf3; "
-            "font-family: 'Segoe UI'; font-size: 10pt; padding: 4px 12px;"
-        )
-
-    def _style_recording(self) -> None:
-        self.setStyleSheet(
-            "border: 2px solid #1f6feb; border-radius: 8px; "
-            "background: #0f2038; color: #58a6ff; "
-            "font-family: 'Segoe UI'; font-size: 10pt; padding: 4px 12px;"
-        )
-
-    # ── Public API ────────────────────────────────────────────────────
-    def set_sequence(self, text: str) -> None:
-        """Set the displayed (saved) value from outside."""
-        self._current_sequence = text
-        self._update_placeholder()
-
-    def _update_placeholder(self) -> None:
-        self.setText(self._current_sequence or t("settings.shortcut_placeholder"))
-
-    # ── Mouse ─────────────────────────────────────────────────────────
-    def mousePressEvent(self, event) -> None:
-        if event.button() == Qt.LeftButton and not self._capturing:
-            self._start_capture()
-        super().mousePressEvent(event)
-
-    # ── Capture lifecycle ─────────────────────────────────────────────
-    def _start_capture(self) -> None:
-        self._capturing = True
-        self._pressed_keys.clear()
-        self._recorded_sequence = ""
-        self._style_recording()
-        self.setText(t("settings.shortcut_recording"))
-        self.setFocus()
-
-    def _commit_capture(self) -> None:
-        """Save the recorded combo (if any) and leave capture mode."""
-        self._capturing = False
-        self._pressed_keys.clear()
-        self._style_idle()
-        if self._recorded_sequence:
-            self._current_sequence = self._recorded_sequence
-            self._on_saved(self._current_sequence)
-        self._update_placeholder()
-
-    def _cancel_capture(self) -> None:
-        """Discard the in-progress recording and restore old value."""
-        self._capturing = False
-        self._pressed_keys.clear()
-        self._recorded_sequence = ""
-        self._style_idle()
-        self._update_placeholder()
-
-    # ── Key events ────────────────────────────────────────────────────
-    def keyPressEvent(self, event) -> None:
-        if not self._capturing:
-            # Enter / Space can start capture when focused via keyboard
-            if event.key() in (Qt.Key_Return, Qt.Key_Space):
-                self._start_capture()
-            return
-
-        if event.key() == Qt.Key_Escape:
-            self._cancel_capture()
-            return
-
-        self._pressed_keys.add(event.key())
-        self._show_live_combo()
-        
-        # If a non-modifier key is pressed, commit the capture immediately
-        if event.key() not in self._modifier_map:
-            self._commit_capture()
-        # Don't call super() – eat the key so it doesn't propagate
-
-    def keyReleaseEvent(self, event) -> None:
-        if not self._capturing:
-            return
-        # Update live display as keys are released
-        self._pressed_keys.discard(event.key())
-        if self._pressed_keys:
-            self._show_live_combo()
-        else:
-            # All keys released – show the last recorded combo
-            if self._recorded_sequence:
-                self.setText(self._recorded_sequence)
-            else:
-                self.setText(t("settings.shortcut_recording"))
-
-    def _show_live_combo(self) -> None:
-        combo = self._build_sequence_string(self._pressed_keys)
-        if combo:
-            self._recorded_sequence = combo  # keep updating live value
-        self.setText(combo or t("settings.shortcut_recording"))
-
-    def _build_sequence_string(self, keys: set) -> str:
-        modifier_order = [Qt.Key_Control, Qt.Key_Alt, Qt.Key_Shift, Qt.Key_Meta]
-        parts = []
-        for mod_key in modifier_order:
-            if mod_key in keys:
-                parts.append(self._modifier_map[mod_key])
-        for key in keys:
-            if key not in self._modifier_map:
-                key_str = QKeySequence(key).toString()
-                if key_str:
-                    parts.append(key_str)
-        return "+".join(parts)
-
-    # ── Focus ─────────────────────────────────────────────────────────
-    def focusOutEvent(self, event) -> None:
-        if self._capturing:
-            # Save whatever was recorded when focus leaves
-            self._commit_capture()
-        super().focusOutEvent(event)
+from useful_utilities_collection.ui.hotkey_edit import LiveHotkeyEdit
 
 
 class SettingsPage(BasePage):
+    _LANG_DISPLAY_NAMES = {
+        "en": "English",
+        "de": "Deutsch",
+        "fr": "Français",
+        "es": "Español",
+        "it": "Italiano",
+        "nl": "Nederlands",
+        "pl": "Polski",
+        "pt": "Português",
+        "ru": "Русский",
+        "tr": "Türkçe",
+        "zh": "中文",
+        "ja": "日本語",
+        "ko": "한국어",
+    }
+
     def __init__(self, context):
         super().__init__(context)
         self.service = context.settings_service
@@ -194,7 +59,6 @@ class SettingsPage(BasePage):
         lang_row = QHBoxLayout()
         self.lang_label = QLabel()
         self.lang_combo = QComboBox()
-        # Dynamically populate languages from available JSON files
         self._populate_language_combo()
         lang_row.addWidget(self.lang_label)
         lang_row.addStretch()
@@ -218,20 +82,18 @@ class SettingsPage(BasePage):
         self.mic_title = QLabel()
         self.mic_title.setObjectName("SectionTitle")
 
-        # Interval row
         interval_row = QHBoxLayout()
         self.interval_label = QLabel()
         self.interval_combo = QComboBox()
-        self.interval_combo.addItem("5.0 seconds (Highly responsive)", 5000)
-        self.interval_combo.addItem("10.0 seconds (Default)", 10000)
-        self.interval_combo.addItem("20.0 seconds (Recommended)", 20000)
-        self.interval_combo.addItem("30.0 seconds (Eco mode)", 30000)
-        self.interval_combo.addItem("Custom...", "custom")
+        self.interval_combo.addItem(t("settings.interval_sec_1"), 5000)
+        self.interval_combo.addItem(t("settings.interval_sec_1_5"), 10000)
+        self.interval_combo.addItem(t("settings.interval_sec_2"), 20000)
+        self.interval_combo.addItem(t("settings.interval_sec_3"), 30000)
+        self.interval_combo.addItem(t("settings.interval_custom"), "custom")
         interval_row.addWidget(self.interval_label)
         interval_row.addStretch()
         interval_row.addWidget(self.interval_combo)
 
-        # Custom interval container
         self.custom_interval_container = QWidget()
         custom_interval_layout = QHBoxLayout(self.custom_interval_container)
         custom_interval_layout.setContentsMargins(0, 0, 0, 0)
@@ -300,7 +162,6 @@ class SettingsPage(BasePage):
 
         self.load_settings()
 
-        # Connect change signals
         self.lang_combo.currentIndexChanged.connect(self.on_language_changed)
         self.tray_checkbox.stateChanged.connect(self.on_tray_changed)
         self.startup_checkbox.stateChanged.connect(self.on_startup_changed)
@@ -308,36 +169,15 @@ class SettingsPage(BasePage):
         self.custom_interval_spin.valueChanged.connect(self.on_custom_interval_changed)
         self.notify_correction_checkbox.stateChanged.connect(self.on_notify_correction_changed)
         self.notify_minimize_checkbox.stateChanged.connect(self.on_notify_minimize_changed)
-        # shortcut_edit uses callback directly, no signal needed here
 
         self.context.state_changed.connect(self.refresh)
         self.refresh()
-
-
-
-    # Human-readable display names for language codes
-    _LANG_DISPLAY_NAMES = {
-        "en": "English",
-        "de": "Deutsch",
-        "fr": "Français",
-        "es": "Español",
-        "it": "Italiano",
-        "nl": "Nederlands",
-        "pl": "Polski",
-        "pt": "Português",
-        "ru": "Русский",
-        "tr": "Türkçe",
-        "zh": "中文",
-        "ja": "日本語",
-        "ko": "한국어",
-    }
 
     def _populate_language_combo(self) -> None:
         """Populate language dropdown from all available JSON language files."""
         self.lang_combo.blockSignals(True)
         self.lang_combo.clear()
         available = get_available_languages()
-        # Sort: ensure 'en' and 'de' are first
         priority = ["en", "de"]
         sorted_langs = [l for l in priority if l in available] + [
             l for l in sorted(available) if l not in priority
@@ -348,8 +188,6 @@ class SettingsPage(BasePage):
         self.lang_combo.blockSignals(False)
 
     def load_settings(self) -> None:
-
-        # Load values into UI widgets without firing signals
         self.lang_combo.blockSignals(True)
         idx = self.lang_combo.findData(self.service.get_language())
         if idx >= 0:
@@ -411,8 +249,8 @@ class SettingsPage(BasePage):
             msg = t("settings.toast_startup_enabled") if enabled else t("settings.toast_startup_disabled")
             self.show_toast(msg)
         else:
-            self.show_toast("Failed to configure auto-startup.")
-        self.load_settings() # Reload just in case it failed
+            self.show_toast(t("settings.toast_startup_failed"))
+        self.load_settings()
 
     def on_interval_changed(self, index: int) -> None:
         val = self.interval_combo.currentData()
@@ -453,7 +291,6 @@ class SettingsPage(BasePage):
         self.show_toast(t("settings.toast_saved"))
 
     def refresh(self) -> None:
-        # Update text labels to support active language
         self.title_label.setText(t("settings.page_title"))
         self.subtitle_label.setText(t("settings.page_subtitle"))
 
@@ -465,7 +302,6 @@ class SettingsPage(BasePage):
         self.mic_title.setText(t("settings.section_microphone"))
         self.interval_label.setText(t("settings.interval_label"))
 
-        # Update combo items dynamically without resetting currentIndex
         self.interval_combo.setItemText(0, t("settings.interval_sec_1"))
         self.interval_combo.setItemText(1, t("settings.interval_sec_1_5"))
         self.interval_combo.setItemText(2, t("settings.interval_sec_2"))
@@ -481,3 +317,6 @@ class SettingsPage(BasePage):
         self.notifications_title.setText(t("settings.section_notifications"))
         self.notify_correction_checkbox.setText(t("settings.notify_on_correction_checkbox"))
         self.notify_minimize_checkbox.setText(t("settings.notify_on_minimize_checkbox"))
+
+        if hasattr(self, "shortcut_edit"):
+            self.shortcut_edit._update_placeholder()

@@ -1,656 +1,505 @@
-# ── Central Color Palette ───────────────────────────────────────────
-COLOR_PALETTE = {
-    # Main app backgrounds
-    "COLOR_BG_WINDOW": "#0d1117",
-    "COLOR_BG_ROOT_STACK": "#11161d",
-    "COLOR_BG_PANEL_SIDEBAR_BTN": "#161b22",
-    "COLOR_BG_INPUT_CONTROL": "#1a2030",
-    "COLOR_BG_PROGRESS": "#0f141a",
-    "COLOR_BG_GUARD_BADGE": "#0f2038",
-    "COLOR_BG_TOAST": "#1f3a6e",
+"""Application theme, centralized design system tokens, and stylesheet definition."""
 
-    # Borders
-    "COLOR_BORDER_STACK": "#212834",
-    "COLOR_BORDER_PANEL_SIDEBAR_CTRL": "#2d333b",
+# ── Design Tokens: Colors ─────────────────────────────────────────────
+# Core Brand & State
+PRIMARY = "#1f6feb"
+PRIMARY_HOVER = "#388bfd"
+ACCENT = "#58a6ff"
+ACCENT_BG = "rgba(88, 166, 255, 0.15)"
+SUCCESS = "#2ea043"
+SUCCESS_BG = "rgba(46, 160, 67, 0.15)"
+DANGER = "#f85149"
+DANGER_BG = "rgba(248, 81, 73, 0.15)"
 
-    # Core theme colors
-    "COLOR_PRIMARY": "#1f6feb",
-    "COLOR_BG_PRIMARY_HOVER": "#388bfd",
-    "COLOR_ACCENT": "#58a6ff",
-    "COLOR_SUCCESS": "#2ea043",
-    "COLOR_DANGER": "#f85149",
-    
-    # Text colors
-    "COLOR_TEXT_MAIN": "#e6edf3",
-    "COLOR_TEXT_WHITE": "#ffffff",
-    "COLOR_TEXT_MUTED_LIGHT": "#9da7b3",
-    "COLOR_TEXT_MUTED_DARK": "#555e6a",
+# Surfaces & Backgrounds
+BG_BASE = "#0d1117"        # Canvas / window background
+BG_SURFACE = "#161b22"     # Elevated surfaces: sidebar, panels, cards, dialogs
+BG_INPUT = "#1a2030"       # Inputs, dropdowns, sub-cards
+BG_HOVER = "#212836"       # Interactive hover state
+BG_PROGRESS = "#0f141a"    # Track backgrounds
+BG_TOAST = "#1f3a6e"
 
-    # Mic Tags Specific Colors
-    "COLOR_BG_MIC_TAG_ACTIVE": "#1a2a1a",
-    "COLOR_BORDER_MIC_TAG_ACTIVE": "#2ea043",
-    "COLOR_BG_MIC_TAG_ACTIVE_HOVER": "#22382a",
-    "COLOR_BORDER_MIC_TAG_ACTIVE_HOVER": "#3fb950",
-    "COLOR_BG_MIC_TAG_ACTIVE_SELECTED": "#1e3020",
-    "COLOR_BORDER_MIC_TAG_ACTIVE_SELECTED": "#3fb950",
-    "COLOR_BG_MIC_TAG_ACTIVE_SELECTED_HOVER": "#254030",
-    "COLOR_BORDER_MIC_TAG_ACTIVE_SELECTED_HOVER": "#56d364",
-    "COLOR_BG_MIC_TAG_SELECTED": "#1a2038",
-    "COLOR_BORDER_MIC_TAG_SELECTED": "#58a6ff",
-    "COLOR_BG_MIC_TAG_SELECTED_HOVER": "#202a4a",
-    "COLOR_BORDER_MIC_TAG_SELECTED_HOVER": "#79c0ff",
-    "COLOR_BG_MIC_TAG_INACTIVE": "#1e2028",
-    "COLOR_BORDER_MIC_TAG_INACTIVE": "#3a4552",
-    "COLOR_BG_MIC_TAG_INACTIVE_HOVER": "#252b36",
+# Borders & Dividers
+BORDER_SUBTLE = "#212834"   # Dividers, separators, root boundaries
+BORDER_DEFAULT = "#2d333b"  # Standard panel, card, and input border
+BORDER_HOVER = "#3a4552"    # Focused or hovered borders
 
-    # Buttons Hover & Alert Variants
-    "COLOR_BG_BTN_HOVER": "#1f2630",
-    "COLOR_BORDER_BTN_HOVER": "#3a4552",
-    "COLOR_BG_DANGER": "#6e1a1a",
-    "COLOR_BG_DANGER_HOVER": "#8b2020",
-    "COLOR_BG_SMALL_SEC_BTN": "#1e2630",
-    "COLOR_BG_SMALL_SEC_BTN_HOVER": "#253040",
-}
+# Typography Colors
+TEXT_PRIMARY = "#ffffff"    # High contrast: headings, active buttons
+TEXT_DEFAULT = "#e6edf3"    # Standard readable text
+TEXT_MUTED = "#8b949e"      # Secondary descriptions, hints
+TEXT_DISABLED = "#484f58"   # Inactive indicators, disabled states
 
-# ── Dynamic Stylesheet Template ───────────────────────────────────────
-_RAW_STYLE = """
-QMainWindow {
-    background: COLOR_BG_WINDOW;
-}
+# ── Design Tokens: Spacing & Radii Scale ──────────────────────────────
+RADIUS_SM = "6px"
+RADIUS_MD = "8px"
+RADIUS_LG = "10px"
+RADIUS_XL = "14px"
+RADIUS_XXL = "16px"
 
-QWidget {
-    color: COLOR_TEXT_MAIN;
-    font-family: "Segoe UI", "Inter", sans-serif;
+PAD_BTN_SM = "5px 12px"
+PAD_BTN = "10px 14px"
+PAD_BTN_LG = "12px 18px"
+PAD_INPUT = "6px 10px"
+PAD_CARD = "12px"
+PAD_TAG = "2px 6px"
+
+# ── Stylesheet Construction ───────────────────────────────────────────
+def generate_style() -> str:
+    """Builds and returns the global application stylesheet from design tokens."""
+    return f"""
+QMainWindow {{
+    background: {BG_BASE};
+}}
+
+QWidget {{
+    color: {TEXT_DEFAULT};
+    font-family: "Segoe UI", "Inter", -apple-system, sans-serif;
     font-size: 10pt;
-}
+}}
 
-QWidget#AppRoot {
-    background: COLOR_BG_ROOT_STACK;
-    border-radius: 0px;
-}
+QLabel {{
+    background: transparent;
+}}
 
-QStackedWidget#ContentStack {
-    background: COLOR_BG_ROOT_STACK;
-    border: 1px solid COLOR_BORDER_STACK;
-    border-radius: 18px;
-}
+QWidget#AppRoot {{
+    background: {BG_BASE};
+}}
 
-/* ── Scrollable pages (prevent clipping on small windows) ── */
-QScrollArea#PageScroll {
+QStackedWidget#ContentStack {{
+    background: {BG_BASE};
+    border: 1px solid {BORDER_SUBTLE};
+    border-radius: {RADIUS_XXL};
+}}
+
+/* ── Scroll Areas ───────────────────────────────────────────── */
+QScrollArea#PageScroll, QScrollArea#MicGuardScroll,
+QScrollArea#PageScroll > QWidget > QWidget,
+QScrollArea#MicGuardScroll > QWidget > QWidget,
+QWidget#MicGuardInner {{
     background: transparent;
     border: none;
-}
+}}
 
-QScrollArea#PageScroll > QWidget > QWidget {
-    background: transparent;
-}
-
-QScrollArea#PageScroll QScrollBar:vertical {
-    background: COLOR_BG_ROOT_STACK;
+QScrollBar:vertical {{
+    background: {BG_BASE};
     width: 10px;
     border-radius: 5px;
-}
+}}
 
-QScrollArea#PageScroll QScrollBar::handle:vertical {
-    background: COLOR_BORDER_PANEL_SIDEBAR_CTRL;
+QScrollBar::handle:vertical {{
+    background: {BORDER_DEFAULT};
     border-radius: 5px;
     min-height: 24px;
-}
+}}
 
-QScrollArea#PageScroll QScrollBar::handle:vertical:hover {
-    background: COLOR_BORDER_BTN_HOVER;
-}
+QScrollBar::handle:vertical:hover {{
+    background: {BORDER_HOVER};
+}}
 
-/* ── Scroll areas – must be fully transparent so dark theme shows ── */
-QScrollArea#MicGuardScroll {
-    background: transparent;
-    border: none;
-}
-
-QScrollArea#MicGuardScroll > QWidget > QWidget {
-    background: transparent;
-}
-
-QWidget#MicGuardInner {
-    background: transparent;
-}
-
-QWidget#Sidebar {
-    background: COLOR_BG_PANEL_SIDEBAR_BTN;
-    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
-    border-radius: 18px;
+/* ── Sidebar ────────────────────────────────────────────────── */
+QWidget#Sidebar {{
+    background: {BG_SURFACE};
+    border: 1px solid {BORDER_DEFAULT};
+    border-radius: {RADIUS_XXL};
     min-width: 220px;
     max-width: 240px;
-}
+}}
 
-QLabel#SidebarTitle {
-    color: COLOR_TEXT_WHITE;
-    font-size: 16pt;
+QLabel#SidebarTitle {{
+    color: {TEXT_PRIMARY};
+    font-size: 13pt;
     font-weight: 700;
-    background: transparent;
-}
+}}
 
-/* ── Guard status indicator in sidebar ─────────────────────── */
-QFrame#GuardStatusIndicator {
-    background: COLOR_BG_INPUT_CONTROL;
-    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
-    border-radius: 10px;
-}
-
-QLabel#GuardDot {
-    font-size: 10pt;
-    background: transparent;
-    color: COLOR_TEXT_MUTED_DARK;
-}
-
-QLabel#GuardDot[active="true"] {
-    color: COLOR_SUCCESS;
-}
-
-QLabel#GuardDot[active="false"] {
-    color: COLOR_TEXT_MUTED_DARK;
-}
-
-QLabel#GuardStatusText {
-    font-size: 9pt;
-    color: COLOR_TEXT_MUTED_LIGHT;
-    background: transparent;
-}
-
-/* ── Page titles ───────────────────────────────────────────── */
-QLabel#PageTitle {
-    color: COLOR_TEXT_WHITE;
-    font-size: 21pt;
-    font-weight: 700;
-    background: transparent;
-}
-
-QLabel#SectionTitle {
-    color: COLOR_TEXT_WHITE;
-    font-size: 11pt;
+QLabel#SidebarSubtitle {{
+    color: {TEXT_MUTED};
+    font-size: 8pt;
     font-weight: 600;
-    background: transparent;
-}
+    margin-top: -2px;
+}}
 
-QLabel#MutedText {
-    color: COLOR_TEXT_MUTED_LIGHT;
-    font-size: 10pt;
-    background: transparent;
-}
+QLabel#SidebarIconLabel {{
+    font-size: 12pt;
+}}
 
-/* ── Card values ───────────────────────────────────────────── */
-QLabel#CardValue {
-    color: COLOR_TEXT_MAIN;
+QFrame#SidebarGroupSeparator, QFrame#SidebarInnerSeparator {{
+    background: {BORDER_SUBTLE};
+    max-height: 1px;
+    margin: 4px 8px;
+}}
+
+QPushButton#SidebarIconButton {{
+    background: {BG_SURFACE};
+    border: 1px solid {BORDER_DEFAULT};
+    border-radius: {RADIUS_LG};
+    padding: {PAD_BTN};
+    text-align: left;
+    color: {TEXT_DEFAULT};
+}}
+
+QPushButton#SidebarIconButton:hover {{
+    background: {BG_HOVER};
+}}
+
+QPushButton#SidebarIconButton:checked {{
+    background: {PRIMARY};
+    border-color: {PRIMARY};
+    color: {TEXT_PRIMARY};
+}}
+
+/* ── Typographic Scale ──────────────────────────────────────── */
+QLabel#PageTitle {{
+    color: {TEXT_PRIMARY};
     font-size: 18pt;
     font-weight: 700;
-    background: transparent;
-}
+}}
 
-QLabel#CardValue[role="success"] {
-    color: COLOR_SUCCESS;
+QLabel#SectionTitle, QLabel#ModernSectionHeader {{
+    color: {TEXT_PRIMARY};
+    font-size: 12pt;
+    font-weight: 600;
+}}
+
+QLabel#MutedText, QLabel#VolumeMetricCaption, QLabel#AboutFieldLabel, QLabel#AboutCopyright {{
+    color: {TEXT_MUTED};
+    font-size: 9pt;
+}}
+
+QLabel#CardValue, QLabel#VolumeMetricValue {{
+    color: {TEXT_DEFAULT};
+    font-size: 18pt;
     font-weight: 700;
-    background: transparent;
-}
+}}
 
-QLabel#CardValue[role="danger"] {
-    color: COLOR_DANGER;
-    font-weight: 700;
-    background: transparent;
-}
+QLabel#CardValue[role="success"] {{ color: {SUCCESS}; }}
+QLabel#CardValue[role="danger"]  {{ color: {DANGER}; }}
+QLabel#CardValue[role="accent"], QLabel#VolumeMetricValue[accent="true"] {{ color: {ACCENT}; }}
 
-QLabel#CardValue[role="accent"] {
-    color: COLOR_ACCENT;
-    font-weight: 700;
-    background: transparent;
-}
+/* ── Panels & Cards ─────────────────────────────────────────── */
+QFrame#Panel, QFrame#ModernPanel, QDialog#GuardExitDialog {{
+    background: {BG_SURFACE};
+    border: 1px solid {BORDER_DEFAULT};
+    border-radius: {RADIUS_XL};
+}}
 
-QLabel#CardValue[role="neutral"] {
-    color: COLOR_TEXT_MAIN;
-    font-weight: 700;
-    background: transparent;
-}
+QFrame#GuardModePanel {{
+    background: {BG_SURFACE};
+    border: 1px solid {PRIMARY};
+    border-radius: 12px;
+}}
 
-/* ── Panels ────────────────────────────────────────────────── */
-QFrame#Panel {
-    background: COLOR_BG_PANEL_SIDEBAR_BTN;
-    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
-    border-radius: 16px;
-}
-
-/* ── Guard Mode panel – more prominent ─────────────────────── */
-QFrame#GuardModePanel {
-    background: COLOR_BG_PANEL_SIDEBAR_BTN;
-    border: 1px solid COLOR_PRIMARY;
-    border-radius: 14px;
-}
-
-QLabel#GuardModeTitle {
-    color: COLOR_ACCENT;
+QLabel#GuardModeTitle {{
+    color: {ACCENT};
     font-size: 10pt;
     font-weight: 700;
-    background: transparent;
-}
+}}
 
-/* ── Clickable mic tag frames ──────────────────────────────── */
+QFrame#VolumeMetricCard, QFrame#AboutOssCard {{
+    background: {BG_INPUT};
+    border: 1px solid {BORDER_DEFAULT};
+    border-radius: {RADIUS_LG};
+    padding: {PAD_CARD};
+}}
 
-/* Active mic (guard ON) – green */
-QFrame#MicTagActive {
-    background: COLOR_BG_MIC_TAG_ACTIVE;
-    border: 1px solid COLOR_BORDER_MIC_TAG_ACTIVE;
-    border-radius: 8px;
-    padding: 2px 0px;
-}
+QFrame#AppFooter {{
+    border: none;
+    border-top: 1px solid {BORDER_SUBTLE};
+}}
 
-QFrame#MicTagActive:hover {
-    background: COLOR_BG_MIC_TAG_ACTIVE_HOVER;
-    border-color: COLOR_BORDER_MIC_TAG_ACTIVE_HOVER;
-}
+/* ── Mic Tag Frames ─────────────────────────────────────────── */
+QFrame#MicTagActive, QFrame#MicTagActiveSelected,
+QFrame#MicTagSelected, QFrame#MicTagInactive {{
+    border-radius: {RADIUS_MD};
+    padding: {PAD_TAG};
+    border: 1px solid {BORDER_DEFAULT};
+    background: {BG_SURFACE};
+}}
 
-/* Active + currently selected – green with thicker border */
-QFrame#MicTagActiveSelected {
-    background: COLOR_BG_MIC_TAG_ACTIVE_SELECTED;
-    border: 2px solid COLOR_BORDER_MIC_TAG_ACTIVE_SELECTED;
-    border-radius: 8px;
-    padding: 2px 0px;
-}
+QFrame#MicTagActive, QFrame#MicTagActiveSelected {{
+    background: {SUCCESS_BG};
+    border-color: {SUCCESS};
+}}
 
-QFrame#MicTagActiveSelected:hover {
-    background: COLOR_BG_MIC_TAG_ACTIVE_SELECTED_HOVER;
-    border-color: COLOR_BORDER_MIC_TAG_ACTIVE_SELECTED_HOVER;
-}
+QFrame#MicTagActive QLabel, QFrame#MicTagActiveSelected QLabel {{
+    color: {SUCCESS};
+}}
 
-/* Inactive but currently selected – blue outline */
-QFrame#MicTagSelected {
-    background: COLOR_BG_MIC_TAG_SELECTED;
-    border: 2px solid COLOR_BORDER_MIC_TAG_SELECTED;
-    border-radius: 8px;
-    padding: 2px 0px;
-}
+QFrame#MicTagSelected {{
+    background: {ACCENT_BG};
+    border-color: {ACCENT};
+}}
 
-QFrame#MicTagSelected:hover {
-    background: COLOR_BG_MIC_TAG_SELECTED_HOVER;
-    border-color: COLOR_BORDER_MIC_TAG_SELECTED_HOVER;
-}
+QFrame#MicTagSelected QLabel {{
+    color: {ACCENT};
+}}
 
-/* Inactive, not selected */
-QFrame#MicTagInactive {
-    background: COLOR_BG_MIC_TAG_INACTIVE;
-    border: 1px solid COLOR_BORDER_MIC_TAG_INACTIVE;
-    border-radius: 8px;
-    padding: 2px 0px;
-}
+QFrame#MicTagInactive QLabel {{
+    color: {TEXT_MUTED};
+}}
 
-QFrame#MicTagInactive:hover {
-    background: COLOR_BG_MIC_TAG_INACTIVE_HOVER;
-    border-color: COLOR_ACCENT;
-}
-
-QLabel#MicTagDot {
-    color: COLOR_SUCCESS;
-    font-size: 8pt;
-    background: transparent;
-}
-
-QLabel#MicTagIcon {
-    background: transparent;
-    font-size: 11pt;
-}
-
-QLabel#MicTagText {
-    background: transparent;
+QLabel#MicTagIcon, QLabel#MicTagText, QLabel#MicTagDot {{
     font-size: 9pt;
     font-weight: 600;
-    color: inherit;
-}
+}}
 
-QFrame#MicTagActive QLabel,
-QFrame#MicTagActiveSelected QLabel {
-    color: COLOR_SUCCESS;
-}
-
-QFrame#MicTagSelected QLabel {
-    color: COLOR_BORDER_MIC_TAG_SELECTED_HOVER;
-}
-
-QFrame#MicTagInactive QLabel {
-    color: COLOR_TEXT_MUTED_LIGHT;
-}
-
-/* ── Buttons ───────────────────────────────────────────────── */
-QPushButton {
-    background: COLOR_BG_PANEL_SIDEBAR_BTN;
-    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
-    border-radius: 12px;
-    padding: 12px 14px;
+/* ── Buttons ────────────────────────────────────────────────── */
+QPushButton {{
+    background: {BG_SURFACE};
+    border: 1px solid {BORDER_DEFAULT};
+    border-radius: {RADIUS_LG};
+    padding: {PAD_BTN};
     text-align: left;
-    color: COLOR_TEXT_MAIN;
-}
+    color: {TEXT_DEFAULT};
+}}
 
-QPushButton:hover {
-    background: COLOR_BG_BTN_HOVER;
-    border-color: COLOR_BORDER_BTN_HOVER;
-}
+QPushButton:hover {{
+    background: {BG_HOVER};
+    border-color: {BORDER_HOVER};
+}}
 
-QPushButton:checked {
-    background: COLOR_PRIMARY;
-    border-color: COLOR_PRIMARY;
-    color: COLOR_TEXT_WHITE;
-}
+QPushButton:checked {{
+    background: {PRIMARY};
+    border-color: {PRIMARY};
+    color: {TEXT_PRIMARY};
+}}
 
-QPushButton#PrimaryButton {
-    background: COLOR_PRIMARY;
-    border: none;
-    border-radius: 12px;
-    padding: 14px 18px;
+QPushButton#PrimaryButton, QPushButton#DangerButton,
+QPushButton#SmallPrimaryButton, QPushButton#SmallSecondaryButton,
+QPushButton#SmallDangerButton, QPushButton#ExitCancelButton,
+QPushButton#ExitQuitButton {{
     text-align: center;
     font-weight: 600;
-    color: COLOR_TEXT_WHITE;
-}
+}}
 
-QPushButton#PrimaryButton:hover {
-    background: COLOR_BG_PRIMARY_HOVER;
-}
-
-QPushButton#DangerButton {
-    background: COLOR_BG_DANGER;
-    border: 1px solid COLOR_DANGER;
-    border-radius: 12px;
-    padding: 14px 18px;
-    text-align: center;
-    font-weight: 600;
-    color: COLOR_TEXT_WHITE;
-}
-
-QPushButton#DangerButton:hover {
-    background: COLOR_BG_DANGER_HOVER;
-}
-
-/* ── Small action buttons (for mic panel header) ───────────── */
-QPushButton#SmallPrimaryButton {
-    background: COLOR_PRIMARY;
+QPushButton#PrimaryButton {{
+    background: {PRIMARY};
     border: none;
-    border-radius: 8px;
-    padding: 5px 12px;
-    font-weight: 600;
+    padding: {PAD_BTN_LG};
+    color: {TEXT_PRIMARY};
+}}
+
+QPushButton#PrimaryButton:hover {{
+    background: {PRIMARY_HOVER};
+}}
+
+QPushButton#DangerButton, QPushButton#ExitQuitButton {{
+    background: {DANGER_BG};
+    border: 1px solid {DANGER};
+    padding: {PAD_BTN_LG};
+    color: {TEXT_PRIMARY};
+}}
+
+QPushButton#DangerButton:hover, QPushButton#ExitQuitButton:hover {{
+    background: {DANGER};
+}}
+
+QPushButton#ExitCancelButton {{
+    background: {BG_INPUT};
+    border: 1px solid {BORDER_DEFAULT};
+    padding: {PAD_BTN_LG};
+    color: {TEXT_DEFAULT};
+}}
+
+QPushButton#ExitCancelButton:hover {{
+    background: {BG_HOVER};
+    border-color: {BORDER_HOVER};
+}}
+
+QPushButton#SmallPrimaryButton, QPushButton#SmallSecondaryButton, QPushButton#SmallDangerButton {{
+    border-radius: {RADIUS_MD};
+    padding: {PAD_BTN_SM};
     font-size: 9pt;
-    color: COLOR_TEXT_WHITE;
-}
+}}
 
-QPushButton#SmallPrimaryButton:hover {
-    background: COLOR_BG_PRIMARY_HOVER;
-}
+QPushButton#SmallPrimaryButton {{
+    background: {PRIMARY};
+    border: none;
+    color: {TEXT_PRIMARY};
+}}
 
-QPushButton#SmallDangerButton {
-    background: COLOR_BG_DANGER;
-    border: 1px solid COLOR_DANGER;
-    border-radius: 8px;
-    padding: 5px 12px;
-    font-weight: 600;
-    font-size: 9pt;
-    color: COLOR_TEXT_WHITE;
-}
+QPushButton#SmallPrimaryButton:hover {{
+    background: {PRIMARY_HOVER};
+}}
 
-QPushButton#SmallDangerButton:hover {
-    background: COLOR_BG_DANGER_HOVER;
-}
+QPushButton#SmallSecondaryButton {{
+    background: {BG_INPUT};
+    color: {TEXT_MUTED};
+}}
 
-QPushButton#SmallSecondaryButton {
-    background: COLOR_BG_SMALL_SEC_BTN;
-    border: 1px solid COLOR_BORDER_BTN_HOVER;
-    border-radius: 8px;
-    padding: 5px 12px;
-    font-size: 9pt;
-    color: COLOR_TEXT_MUTED_LIGHT;
-}
+QPushButton#SmallSecondaryButton:hover {{
+    background: {BG_HOVER};
+    color: {TEXT_DEFAULT};
+}}
 
-QPushButton#SmallSecondaryButton:hover {
-    background: COLOR_BG_SMALL_SEC_BTN_HOVER;
-    border-color: COLOR_ACCENT;
-    color: COLOR_TEXT_MAIN;
-}
+QPushButton#SmallDangerButton {{
+    background: {DANGER_BG};
+    border: 1px solid {DANGER};
+    color: {TEXT_PRIMARY};
+}}
 
-/* ── Form controls ─────────────────────────────────────────── */
-QComboBox, QDoubleSpinBox, QSpinBox, QCheckBox, QProgressBar, QSlider {
-    font-size: 10pt;
-}
+QPushButton#SmallDangerButton:hover {{
+    background: {DANGER};
+}}
 
-QComboBox, QDoubleSpinBox, QSpinBox {
-    background: COLOR_BG_INPUT_CONTROL;
-    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
-    border-radius: 8px;
-    padding: 6px 10px;
-    color: COLOR_TEXT_MAIN;
+/* ── Form Controls & Inputs ─────────────────────────────────── */
+QComboBox, QDoubleSpinBox, QSpinBox {{
+    background: {BG_INPUT};
+    border: 1px solid {BORDER_DEFAULT};
+    border-radius: {RADIUS_MD};
+    padding: {PAD_INPUT};
+    color: {TEXT_DEFAULT};
     min-width: 160px;
-}
+}}
 
-QComboBox:hover, QDoubleSpinBox:hover, QSpinBox:hover {
-    border-color: COLOR_BORDER_BTN_HOVER;
-}
+QComboBox:hover, QDoubleSpinBox:hover, QSpinBox:hover {{
+    border-color: {BORDER_HOVER};
+}}
 
-QComboBox::drop-down {
+QComboBox::drop-down {{
     border: none;
-}
+}}
 
-QComboBox QAbstractItemView {
-    background: COLOR_BG_INPUT_CONTROL;
-    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
-    border-radius: 8px;
-    color: COLOR_TEXT_MAIN;
-    selection-background-color: COLOR_PRIMARY;
-}
+QComboBox QAbstractItemView {{
+    background: {BG_INPUT};
+    border: 1px solid {BORDER_DEFAULT};
+    border-radius: {RADIUS_MD};
+    color: {TEXT_DEFAULT};
+    selection-background-color: {PRIMARY};
+}}
 
 QDoubleSpinBox::up-button, QDoubleSpinBox::down-button,
-QSpinBox::up-button, QSpinBox::down-button {
+QSpinBox::up-button, QSpinBox::down-button {{
     background: transparent;
     border: none;
     width: 20px;
-}
+}}
 
 QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover,
-QSpinBox::up-button:hover, QSpinBox::down-button:hover {
-    background: COLOR_BG_MIC_TAG_INACTIVE_HOVER;
-}
+QSpinBox::up-button:hover, QSpinBox::down-button:hover {{
+    background: {BG_HOVER};
+}}
 
-QCheckBox {
+QCheckBox {{
     spacing: 8px;
-}
+}}
 
-QCheckBox::indicator {
+QCheckBox::indicator {{
     width: 18px;
     height: 18px;
     border-radius: 5px;
-    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
-    background: COLOR_BG_INPUT_CONTROL;
-}
+    border: 1px solid {BORDER_DEFAULT};
+    background: {BG_INPUT};
+}}
 
-QCheckBox::indicator:checked {
-    background: COLOR_PRIMARY;
-    border-color: COLOR_PRIMARY;
-}
+QCheckBox::indicator:checked {{
+    background: {PRIMARY};
+    border-color: {PRIMARY};
+}}
 
-QProgressBar {
-    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
-    border-radius: 8px;
-    background: COLOR_BG_PROGRESS;
+QProgressBar {{
+    border: 1px solid {BORDER_DEFAULT};
+    border-radius: {RADIUS_MD};
+    background: {BG_PROGRESS};
     text-align: center;
     min-height: 18px;
-}
+}}
 
-QProgressBar::chunk {
-    background: COLOR_PRIMARY;
+QProgressBar::chunk {{
+    background: {PRIMARY};
     border-radius: 7px;
-}
+}}
 
-/* ── Toast notifications ───────────────────────────────────── */
-QLabel#ToastMessage {
-    background-color: COLOR_BG_TOAST;
-    border: 1px solid COLOR_PRIMARY;
-    color: white;
-    border-radius: 10px;
-    padding: 10px 14px;
+QSlider::groove:horizontal {{
+    height: 6px;
+    background: {BG_PROGRESS};
+    border-radius: 3px;
+}}
+
+QSlider::sub-page:horizontal {{
+    background: {PRIMARY};
+    border-radius: 3px;
+}}
+
+QSlider::handle:horizontal {{
+    background: {TEXT_PRIMARY};
+    border: 2px solid {PRIMARY};
+    width: 16px;
+    margin-top: -6px;
+    margin-bottom: -6px;
+    border-radius: {RADIUS_MD};
+}}
+
+QSlider::handle:horizontal:hover {{
+    background: {ACCENT};
+    border-color: {ACCENT};
+}}
+
+/* ── Badges, Indicators & Toasts ────────────────────────────── */
+QLabel#ToastMessage {{
+    background-color: {BG_TOAST};
+    border: 1px solid {PRIMARY};
+    color: {TEXT_PRIMARY};
+    border-radius: {RADIUS_LG};
+    padding: {PAD_BTN};
     font-weight: 600;
-}
+}}
 
-/* ── Status badge (active guard mode) ─────────────────────── */
-QFrame#ActiveGuardBadge {
-    background: COLOR_BG_GUARD_BADGE;
-    border: 2px solid COLOR_PRIMARY;
-    border-radius: 12px;
-}
+QFrame#GuardStatusIndicator {{
+    background: {BG_INPUT};
+    border: 1px solid {BORDER_DEFAULT};
+    border-radius: {RADIUS_MD};
+}}
 
-QLabel#ActiveGuardLabel {
-    color: COLOR_ACCENT;
-    font-weight: 700;
-    font-size: 10pt;
-    background: transparent;
-}
+QLabel#GuardDot, QLabel#StatusIndicatorDot {{ font-size: 8pt; }}
+QLabel#GuardDot[active="true"], QLabel#StatusIndicatorDot[active="true"]   {{ color: {SUCCESS}; }}
+QLabel#GuardDot[active="false"], QLabel#StatusIndicatorDot[active="false"] {{ color: {TEXT_DISABLED}; }}
 
-/* ── About page ──────────────────────────────────────── */
-QLabel#AboutVersionBadge {
-    background: COLOR_BG_INPUT_CONTROL;
-    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
-    color: COLOR_TEXT_MUTED_LIGHT;
-    font-weight: 600;
-    font-size: 9pt;
-    padding: 3px 10px;
-    border-radius: 8px;
-}
+QLabel#GuardStatusText {{ font-size: 9pt; font-weight: 600; }}
+QLabel#GuardStatusText[active="true"]  {{ color: {SUCCESS}; }}
+QLabel#GuardStatusText[active="false"] {{ color: {TEXT_MUTED}; }}
 
-QFrame#AboutOssCard {
-    background: COLOR_BG_GUARD_BADGE;
-    border: 1px solid COLOR_BORDER_MIC_TAG_ACTIVE;
-    border-radius: 14px;
-}
+QLabel#StatusIndicatorText {{ font-size: 11pt; font-weight: 600; color: {TEXT_PRIMARY}; }}
+QLabel#StatusIndicatorHint {{ font-size: 9pt; color: {TEXT_MUTED}; }}
 
-QLabel#AboutOssTitle {
-    color: COLOR_SUCCESS;
-    font-size: 12pt;
-    font-weight: 700;
-    background: transparent;
-}
-
-QLabel#AboutOssIcon {
-    font-size: 13pt;
-    background: transparent;
-}
-
-QLabel#AboutFieldLabel {
-    color: COLOR_TEXT_MUTED_LIGHT;
-    font-size: 10pt;
-    background: transparent;
-}
-
-QLabel#AboutFieldValue {
-    color: COLOR_TEXT_MAIN;
-    font-size: 10pt;
-    font-weight: 600;
-    background: transparent;
-}
-
-QLabel#AboutCopyright {
-    color: COLOR_TEXT_MUTED_LIGHT;
+/* ── About Dialog ───────────────────────────────────────────── */
+QLabel#AboutOssTitle {{ color: {TEXT_PRIMARY}; font-size: 10pt; font-weight: 600; }}
+QLabel#AboutFieldValue {{ color: {TEXT_DEFAULT}; font-size: 9pt; font-weight: 600; }}
+QLabel#AboutVersionBadge {{
+    background: {PRIMARY};
+    color: {TEXT_PRIMARY};
+    border-radius: {RADIUS_SM};
+    padding: 2px 8px;
     font-size: 8pt;
-    background: transparent;
-}
-
-/* ── Sidebar bottom group (Settings / About) ─────────── */
-QFrame#SidebarGroupSeparator {
-    background: COLOR_BORDER_STACK;
-    max-height: 1px;
-    margin: 6px 8px;
-}
-
-QFrame#SidebarInnerSeparator {
-    background: COLOR_BORDER_STACK;
-    max-height: 1px;
-    margin: 2px 12px;
-}
-
-QPushButton#SidebarIconButton {
-    background: COLOR_BG_PANEL_SIDEBAR_BTN;
-    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
-    border-radius: 12px;
-    padding: 12px 16px;
-    text-align: left;
-    color: COLOR_TEXT_MAIN;
-    font-size: 10pt;
-}
-
-QPushButton#SidebarIconButton:hover {
-    background: COLOR_BG_INPUT_CONTROL;
-}
-
-QPushButton#SidebarIconButton:checked {
-    background: COLOR_PRIMARY;
-    color: COLOR_TEXT_WHITE;
-}
-
-/* ── App footer ──────────────────────────────────────── */
-QFrame#AppFooter {
-    background: transparent;
-    border: none;
-    border-top: 1px solid COLOR_BORDER_STACK;
-}
-
-/* ── Warning Box for Timed Lock ────────────────────────── */
-QFrame#TimerWarningBox {
-    background: rgba(248, 81, 73, 0.12);
-    border: 1.5px solid COLOR_DANGER;
-    border-radius: 12px;
-}
-
-QLabel#TimerWarningTitle {
-    color: COLOR_DANGER;
-    font-size: 10.5pt;
     font-weight: 700;
-    background: transparent;
-}
+}}
 
-QLabel#TimerWarningText {
-    color: COLOR_TEXT_MAIN;
-    font-size: 9.5pt;
-    background: transparent;
-}
+/* ── Timer & Countdown Lock ─────────────────────────────────── */
+QFrame#TimerWarningBox, QFrame#TimerDisplayPanel, QFrame#TimerDisplayBox {{
+    background: {DANGER_BG};
+    border: 1.5px solid {DANGER};
+    border-radius: 12px;
+}}
 
-/* ── Timer display (Input Lock countdown) ──────────────── */
-QFrame#TimerDisplayPanel {
-    background: rgba(248, 81, 73, 0.15);
-    border: 2px solid COLOR_DANGER;
-    border-radius: 14px;
-}
+QLabel#TimerCountdown {{
+    color: {DANGER};
+    font-size: 24pt;
+    font-weight: 800;
+    font-family: "Consolas", "Courier New", monospace;
+}}
 
-QLabel#TimerCountdown {
-    color: #ff6b6b;
-    font-size: 32pt;
-    font-weight: 700;
-    font-family: "Consolas", "Cascadia Mono", monospace;
-    background: transparent;
-}
-
-QLabel#TimerInfoText {
-    color: COLOR_DANGER;
+QLabel#TimerWarningTitle, QLabel#TimerInfoText {{
+    color: {DANGER};
     font-size: 11pt;
     font-weight: 700;
-    background: transparent;
-}
+}}
 
-/* ── Guard exit confirmation dialog ────────────────────── */
-QDialog#GuardExitDialog {
-    background: COLOR_BG_PANEL_SIDEBAR_BTN;
-    border: 1px solid COLOR_BORDER_PANEL_SIDEBAR_CTRL;
-    border-radius: 16px;
-}
-
+QLabel#TimerWarningText {{
+    color: {TEXT_DEFAULT};
+    font-size: 9pt;
+}}
 """
 
-def generate_style() -> str:
-    """Replaces color constants in the raw style sheet and returns the resolved stylesheet string."""
-    resolved_style = _RAW_STYLE
-    # Sort keys by length in descending order to avoid prefix replacement conflicts
-    for key in sorted(COLOR_PALETTE.keys(), key=len, reverse=True):
-        val = COLOR_PALETTE[key]
-        resolved_style = resolved_style.replace(key, val)
-    return resolved_style
 
-# Expose the resolved style string for compatibility
+# Expose resolved style for application use
 APP_STYLE = generate_style()

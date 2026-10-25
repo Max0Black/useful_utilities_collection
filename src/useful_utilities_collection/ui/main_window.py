@@ -1,5 +1,5 @@
 from PySide6.QtCore import QEvent, Qt
-from PySide6.QtGui import QAction, QCloseEvent, QGuiApplication, QIcon, QKeySequence, QShortcut
+from PySide6.QtGui import QCloseEvent, QGuiApplication, QIcon, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -7,27 +7,34 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMainWindow,
-    QMenu,
-    QMessageBox,
     QPushButton,
+    QScrollArea,
     QSizePolicy,
     QStackedWidget,
-    QSystemTrayIcon,
     QVBoxLayout,
     QWidget,
 )
 
 from useful_utilities_collection.core.app_context import AppContext
 from useful_utilities_collection.core.translation import t
+from useful_utilities_collection.modules.about.module import create_module as create_about_module
 from useful_utilities_collection.modules.dashboard.module import create_module as create_dashboard_module
 from useful_utilities_collection.modules.input_lock.module import create_module as create_input_lock_module
 from useful_utilities_collection.modules.microphone_guard.module import create_module as create_microphone_guard_module
 from useful_utilities_collection.modules.settings.module import create_module as create_settings_module
-from useful_utilities_collection.modules.about.module import create_module as create_about_module
 from useful_utilities_collection.ui.guard_exit_dialog import GuardExitDialog
+from useful_utilities_collection.ui.tray_manager import TrayManager
 
 
 class MainWindow(QMainWindow):
+    _ICON_MAP = {
+        "dashboard": "📊",
+        "input_lock": "🔒",
+        "microphone_guard": "🎙",
+        "settings": "⚙",
+        "about": "ℹ",
+    }
+
     def __init__(self, context: AppContext, app_icon: QIcon):
         super().__init__()
         self.context = context
@@ -41,27 +48,41 @@ class MainWindow(QMainWindow):
             create_about_module(),
         ]
         self.nav_buttons: list[QPushButton] = []
+        self.pages: list[QWidget] = []
+        self.about_index = None
+        self.settings_index = None
 
         self.setWindowTitle("Useful Utilities Collection")
         self.resize(1200, 820)
-        # Prevent Qt from auto-resizing when child widgets change their size hints.
-        # The user's chosen window size must always be respected.
-        self.setMinimumSize(760, 540)
-        from PySide6.QtWidgets import QSizePolicy as _SP
-        self.setSizePolicy(_SP.Ignored, _SP.Ignored)
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
 
-        root = QWidget()
-        root.setObjectName("AppRoot")
-        self.setCentralWidget(root)
+        self._build_ui()
+        self._setup_events()
 
-        root_layout = QVBoxLayout(root)
-        root_layout.setContentsMargins(16, 16, 16, 16)
-        root_layout.setSpacing(12)
+    # ── UI Construction ────────────────────────────────────────────────
+    def _build_ui(self) -> None:
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+
+        root_layout = QVBoxLayout(central_widget)
+        root_layout.setContentsMargins(12, 12, 12, 12)
+        root_layout.setSpacing(0)
 
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(16)
 
+        sidebar = self._build_sidebar()
+        self.stack = QStackedWidget()
+        self.stack.setObjectName("ContentStack")
+
+        self._build_pages(sidebar.layout())
+
+        layout.addWidget(sidebar, 0)
+        layout.addWidget(self.stack, 1)
+        root_layout.addLayout(layout)
+
+    def _build_sidebar(self) -> QWidget:
         sidebar = QWidget()
         sidebar.setObjectName("Sidebar")
         sidebar_layout = QVBoxLayout(sidebar)
@@ -91,25 +112,12 @@ class MainWindow(QMainWindow):
 
         sidebar_layout.addWidget(self.guard_status_indicator)
         sidebar_layout.addSpacing(8)
+        return sidebar
 
-        self.stack = QStackedWidget()
-        self.stack.setObjectName("ContentStack")
-
-        self.pages: list = []
-        from PySide6.QtWidgets import QApplication, QScrollArea
-        self.about_index = None
-        self.settings_index = None
-
-        _ICON_MAP = {
-            "dashboard": "📊",
-            "input_lock": "🔒",
-            "microphone_guard": "🎙",
-            "settings": "⚙",
-            "about": "ℹ",
-        }
-
+    def _build_pages(self, sidebar_layout: QVBoxLayout) -> None:
         main_buttons = []
         bottom_buttons = []
+
         for index, module in enumerate(self.modules):
             QApplication.processEvents()
             page = module.page_factory(self.context)
@@ -121,7 +129,7 @@ class MainWindow(QMainWindow):
             scroll.setWidget(page)
             self.stack.addWidget(scroll)
 
-            icon_text = _ICON_MAP.get(module.module_id, "")
+            icon_text = self._ICON_MAP.get(module.module_id, "")
             text = t(f"{module.module_id}.title")
             button = self._create_sidebar_icon_button(icon_text, text)
             button.clicked.connect(lambda checked=False, i=index: self.switch_page(i))
@@ -152,99 +160,6 @@ class MainWindow(QMainWindow):
                 sep.setObjectName("SidebarInnerSeparator")
                 sidebar_layout.addWidget(sep)
 
-        layout.addWidget(sidebar, 0)
-        layout.addWidget(self.stack, 1)
-
-        root_layout.addLayout(layout)
-
-        # Setup System Tray
-        self._setup_tray_icon()
-        self.context.state_changed.connect(self._update_tray_actions)
-
-        # Connect session shutdown handling
-        QGuiApplication.instance().commitDataRequest.connect(self.on_commit_data)
-
-        # Connect notification signal
-        self.context.notification_requested.connect(self.show_tray_message)
-
-        # Connect state change to retranslate UI
-        self.context.state_changed.connect(self.retranslate_ui)
-        self.context.state_changed.connect(self._update_guard_indicator)
-        self.retranslate_ui()
-        self._update_guard_indicator()
-
-        # Alt+F4 shortcut: show notification then exit
-        self._alt_f4_forced = False
-        self.alt_f4_shortcut = QShortcut(QKeySequence("Alt+F4"), self)
-        self.alt_f4_shortcut.activated.connect(self._alt_f4_activated)
-
-        self.switch_page(0)
-
-    def switch_page(self, index: int) -> None:
-        self.stack.setCurrentIndex(index)
-
-        for button_index, button in enumerate(self.nav_buttons):
-            button.setChecked(button_index == index)
-
-        # Performance fix: Only refresh the currently visible page
-        page = self.pages[index] if index < len(self.pages) else None
-        if page is not None:
-            if hasattr(page, "refresh"):
-                page.refresh()
-            # Smooth, cheap fade-in for the newly shown page (no window relayout).
-            if hasattr(page, "fade_in"):
-                page.fade_in()
-
-    def refresh_current_page(self) -> None:
-        """Refresh only the currently visible page."""
-        index = self.stack.currentIndex()
-        page = self.pages[index] if index < len(self.pages) else None
-        if page is not None and hasattr(page, "refresh"):
-            page.refresh()
-
-    def _update_guard_indicator(self) -> None:
-        """Update the guard status dot in the sidebar."""
-        guard_active = self.context.microphone_guard_service._guard_enabled
-        if guard_active:
-            self.guard_dot.setProperty("active", "true")
-            self.guard_status_text.setText(t("microphone_guard.status_title_active"))
-        else:
-            self.guard_dot.setProperty("active", "false")
-            self.guard_status_text.setText(t("microphone_guard.status_title_inactive"))
-        self.style().unpolish(self.guard_dot)
-        self.style().polish(self.guard_dot)
-
-    def _update_tray_actions(self) -> None:
-        if not hasattr(self, "mg_action"):
-            return
-        svc = self.context.microphone_guard_service
-        self.mg_action.setChecked(svc._guard_enabled)
-        self.mouse_action.setChecked(self.context.input_lock_service.mouse_locked())
-        self.keyboard_action.setChecked(self.context.input_lock_service.keyboard_locked())
-
-    def open_settings(self) -> None:
-        if self.settings_index is not None:
-            self.switch_page(self.settings_index)
-        self.show_and_activate()
-
-    def _toggle_microphone_guard(self) -> None:
-        svc = self.context.microphone_guard_service
-        device_id = svc.get_selected_device_id()
-        if device_id:
-            current = svc.is_device_guard_enabled(device_id)
-            svc.set_guard_enabled(device_id, not current)
-        self._update_tray_actions()
-
-    def _toggle_mouse_lock(self) -> None:
-        from useful_utilities_collection.modules.input_lock.controller import InputLockController
-        InputLockController(self.context).toggle_mouse_lock()
-        self._update_tray_actions()
-
-    def _toggle_keyboard_lock(self) -> None:
-        from useful_utilities_collection.modules.input_lock.controller import InputLockController
-        InputLockController(self.context).toggle_keyboard_lock()
-        self._update_tray_actions()
-
     def _create_sidebar_icon_button(self, icon_text: str, text: str) -> QPushButton:
         button = QPushButton()
         button.setCheckable(True)
@@ -273,57 +188,49 @@ class MainWindow(QMainWindow):
         button._sidebar_text_label = text_label
         return button
 
-    def _is_german(self) -> bool:
-        from useful_utilities_collection.core.translation import get_language
-        return get_language() == "de"
+    # ── Event Setup & Wiring ──────────────────────────────────────────
+    def _setup_events(self) -> None:
+        self.tray_manager = TrayManager(self, self.app_icon)
+        self.tray_icon = self.tray_manager.tray_icon
 
-    def _setup_tray_icon(self) -> None:
-        self.tray_icon = QSystemTrayIcon(self.app_icon, self)
-        self.tray_icon.setToolTip(t("app.tray_tooltip"))
-        tray_menu = QMenu(self)
+        self.context.state_changed.connect(self.tray_manager.update_actions)
+        self.context.input_lock_service.state.changed.connect(self.tray_manager.update_actions)
+        self.context.state_changed.connect(self.retranslate_ui)
+        self.context.state_changed.connect(self._update_guard_indicator)
+        self.context.notification_requested.connect(self.show_tray_message)
 
-        # Show action
-        self.show_action = QAction(t("app.tray_menu_show"), self)
-        self.show_action.triggered.connect(self.show_and_activate)
-        tray_menu.addAction(self.show_action)
-        tray_menu.addSeparator()
+        QGuiApplication.instance().commitDataRequest.connect(self.on_commit_data)
 
-        # Microphone Guard
-        self.mg_action = QAction(t("app.tray_menu_microphone_guard"), self)
-        self.mg_action.setCheckable(True)
-        self.mg_action.triggered.connect(lambda checked: self._toggle_microphone_guard())
-        tray_menu.addAction(self.mg_action)
+        self._alt_f4_shortcut = QShortcut(QKeySequence("Alt+F4"), self)
+        self._alt_f4_shortcut.activated.connect(self._alt_f4_activated)
 
-        # Mouse lock
-        self.mouse_action = QAction(t("app.tray_menu_lock_mouse"), self)
-        self.mouse_action.setCheckable(True)
-        self.mouse_action.triggered.connect(lambda checked: self._toggle_mouse_lock())
-        tray_menu.addAction(self.mouse_action)
+        self.retranslate_ui()
+        self._update_guard_indicator()
+        self.switch_page(0)
 
-        # Keyboard lock
-        self.keyboard_action = QAction(t("app.tray_menu_lock_keyboard"), self)
-        self.keyboard_action.setCheckable(True)
-        self.keyboard_action.triggered.connect(lambda checked: self._toggle_keyboard_lock())
-        tray_menu.addAction(self.keyboard_action)
+    # ── Navigation & Actions ──────────────────────────────────────────
+    def switch_page(self, index: int) -> None:
+        self.stack.setCurrentIndex(index)
+        for button_index, button in enumerate(self.nav_buttons):
+            button.setChecked(button_index == index)
 
-        tray_menu.addSeparator()
+        page = self.pages[index] if index < len(self.pages) else None
+        if page is not None:
+            if hasattr(page, "refresh"):
+                page.refresh()
+            if hasattr(page, "fade_in"):
+                page.fade_in()
 
-        # Settings
-        self.settings_action = QAction(t("app.tray_menu_settings"), self)
-        self.settings_action.triggered.connect(self.open_settings)
-        tray_menu.addAction(self.settings_action)
+    def refresh_current_page(self) -> None:
+        index = self.stack.currentIndex()
+        page = self.pages[index] if index < len(self.pages) else None
+        if page is not None and hasattr(page, "refresh"):
+            page.refresh()
 
-        tray_menu.addSeparator()
-
-        # Exit action
-        self.exit_action = QAction(t("app.tray_menu_exit"), self)
-        self.exit_action.triggered.connect(self.exit_app)
-        tray_menu.addAction(self.exit_action)
-
-        self.tray_icon.setContextMenu(tray_menu)
-        self.tray_icon.activated.connect(self.on_tray_icon_activated)
-        self.tray_icon.show()
-        self._update_tray_actions()
+    def open_settings(self) -> None:
+        if self.settings_index is not None:
+            self.switch_page(self.settings_index)
+        self.show_and_activate()
 
     def show_and_activate(self) -> None:
         self.show()
@@ -331,29 +238,17 @@ class MainWindow(QMainWindow):
         self.activateWindow()
         self.raise_()
 
-    def on_tray_icon_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
-        if reason == QSystemTrayIcon.Trigger:
-            if self.isVisible():
-                self.hide()
-            else:
-                self.show_and_activate()
-        elif reason == QSystemTrayIcon.DoubleClick:
-            self.show_and_activate()
-
     def exit_app(self) -> None:
         self._allow_exit = True
         self.context.input_lock_service.unlock()
-        if hasattr(self, "tray_icon"):
-            self.tray_icon.hide()
+        self.tray_manager.hide()
         QApplication.quit()
 
-    def _alt_f4_activated(self):
-        if hasattr(self, "tray_icon") and self.tray_icon.isVisible():
-            self.tray_icon.showMessage(
+    def _alt_f4_activated(self) -> None:
+        if self.tray_manager.is_visible():
+            self.tray_manager.show_message(
                 t("app.alt_f4_terminated_title"),
                 t("app.alt_f4_terminated_body"),
-                QSystemTrayIcon.Information,
-                3000,
             )
         self._allow_exit = True
         self.close()
@@ -363,27 +258,25 @@ class MainWindow(QMainWindow):
 
     def show_tray_message(self, title: str, message: str) -> None:
         if self.isHidden() or self.isMinimized():
-            if hasattr(self, "tray_icon") and self.tray_icon.isVisible():
-                self.tray_icon.showMessage(title, message, QSystemTrayIcon.Information, 3000)
+            self.tray_manager.show_message(title, message)
+
+    def _update_guard_indicator(self) -> None:
+        guard_active = self.context.microphone_guard_service._guard_enabled
+        if guard_active:
+            self.guard_dot.setProperty("active", "true")
+            self.guard_status_text.setText(t("microphone_guard.status_title_active"))
+        else:
+            self.guard_dot.setProperty("active", "false")
+            self.guard_status_text.setText(t("microphone_guard.status_title_inactive"))
+        self.style().unpolish(self.guard_dot)
+        self.style().polish(self.guard_dot)
 
     def retranslate_ui(self) -> None:
         self.setWindowTitle(t("app.title"))
         if hasattr(self, "sidebar_title"):
             self.sidebar_title.setText(t("app.sidebar_title"))
-        if hasattr(self, "tray_icon"):
-            self.tray_icon.setToolTip(t("app.tray_tooltip"))
-            if hasattr(self, "show_action"):
-                self.show_action.setText(t("app.tray_menu_show"))
-            if hasattr(self, "exit_action"):
-                self.exit_action.setText(t("app.tray_menu_exit"))
-            if hasattr(self, "mg_action"):
-                self.mg_action.setText(t("app.tray_menu_microphone_guard"))
-            if hasattr(self, "mouse_action"):
-                self.mouse_action.setText(t("app.tray_menu_lock_mouse"))
-            if hasattr(self, "keyboard_action"):
-                self.keyboard_action.setText(t("app.tray_menu_lock_keyboard"))
-            if hasattr(self, "settings_action"):
-                self.settings_action.setText(t("app.tray_menu_settings"))
+        if hasattr(self, "tray_manager"):
+            self.tray_manager.retranslate_ui()
 
         for index, module in enumerate(self.modules):
             if index < len(self.nav_buttons):
@@ -396,11 +289,11 @@ class MainWindow(QMainWindow):
 
         self._update_guard_indicator()
 
+    # ── Window Lifecycle Events ───────────────────────────────────────
     def closeEvent(self, event: QCloseEvent) -> None:
         if self._allow_exit:
             self.context.input_lock_service.unlock()
-            if hasattr(self, "tray_icon"):
-                self.tray_icon.hide()
+            self.tray_manager.hide()
             event.accept()
             return
 
@@ -418,14 +311,11 @@ class MainWindow(QMainWindow):
             if close_to_tray:
                 event.ignore()
                 self.hide()
-                if hasattr(self, "tray_icon") and self.tray_icon.isVisible():
-                    if self.context.settings_service.get_notify_on_minimize():
-                        self.tray_icon.showMessage(
-                            t("app.tray_message_title"),
-                            t("app.tray_message_body"),
-                            QSystemTrayIcon.Information,
-                            3000
-                        )
+                if self.tray_manager.is_visible() and self.context.settings_service.get_notify_on_minimize():
+                    self.tray_manager.show_message(
+                        t("app.tray_message_title"),
+                        t("app.tray_message_body"),
+                    )
             else:
                 self.exit_app()
                 event.accept()
@@ -439,12 +329,9 @@ class MainWindow(QMainWindow):
                     if self.context.input_lock_service.keyboard_locked() or self.context.input_lock_service.mouse_locked():
                         self.context.input_lock_service.unlock()
 
-                    if hasattr(self, "tray_icon") and self.tray_icon.isVisible():
-                        if self.context.settings_service.get_notify_on_minimize():
-                            self.tray_icon.showMessage(
-                                t("app.tray_message_title"),
-                                t("app.tray_message_body"),
-                                QSystemTrayIcon.Information,
-                                3000
-                            )
+                    if self.tray_manager.is_visible() and self.context.settings_service.get_notify_on_minimize():
+                        self.tray_manager.show_message(
+                            t("app.tray_message_title"),
+                            t("app.tray_message_body"),
+                        )
         super().changeEvent(event)

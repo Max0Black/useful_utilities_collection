@@ -1,9 +1,6 @@
-import sys
-from pathlib import Path
 from PySide6.QtCore import QSettings
 
-if sys.platform == "win32":
-    import winreg
+from .autostart_service import AutostartService
 
 
 class SettingsService:
@@ -15,8 +12,6 @@ class SettingsService:
         self._mouse_lock_hotkey = str(self._settings.value("input_lock/mouse_lock_hotkey", "Shift+Alt+M"))
         self._notify_on_correction = self._to_bool(self._settings.value("notifications/notify_on_correction", True))
         self._notify_on_minimize = self._to_bool(self._settings.value("notifications/notify_on_minimize", True))
-        # Autostart handling delegated to AutostartService
-        from .autostart_service import AutostartService
         self._autostart = AutostartService()
 
     def get_language(self) -> str:

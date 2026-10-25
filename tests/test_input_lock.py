@@ -103,5 +103,24 @@ class TestInputLockService(unittest.TestCase):
         self.assertTrue(service.keyboard_locked())
         self.assertTrue(service.mouse_locked())
 
+    def test_emergency_unlock_unlocks_all_and_notifies_callbacks(self):
+        service = InputLockService(self.mock_settings)
+        cb_called = []
+        service.add_emergency_unlock_callback(lambda: cb_called.append(True))
+
+        result = service.emergency_unlock()
+
+        self.assertTrue(result)
+        self.mock_keyboard_service.unlock.assert_called()
+        self.mock_mouse_service.unlock.assert_called()
+        self.assertEqual(len(cb_called), 1)
+
+    def test_update_hotkey(self):
+        service = InputLockService(self.mock_settings)
+        service.update_hotkey()
+
+        self.mock_keyboard_service.update_hotkey.assert_called_once()
+        self.mock_mouse_service.update_hotkey.assert_called_once()
+
 if __name__ == "__main__":
     unittest.main()

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QTimer, Qt, QRectF
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
-from PySide6.QtWidgets import QApplication, QSplashScreen
+from PySide6.QtWidgets import QApplication, QSplashScreen, QSystemTrayIcon
 from PySide6.QtGui import QIcon, QPixmap, QPainter, QPen, QColor, QFont, QBrush
 
 from useful_utilities_collection.core.app_context import AppContext
@@ -24,7 +24,6 @@ def _to_bool_setting(value) -> bool:
 
 class AnimatedSplashScreen(QSplashScreen):
     def __init__(self, fallback_icon_path: Path, message: str = ""):
-        # Create an empty translucent pixmap of size 280x320
         pixmap = QPixmap(280, 320)
         pixmap.fill(Qt.transparent)
         super().__init__(pixmap)
@@ -42,10 +41,36 @@ class AnimatedSplashScreen(QSplashScreen):
                 140, 140, Qt.KeepAspectRatio, Qt.SmoothTransformation
             )
 
-        # Start timer for the three-dot loading animation
+        # Pre-render static background card and logo into base pixmap
+        self.base_pixmap = QPixmap(280, 320)
+        self.base_pixmap.fill(Qt.transparent)
+        p = QPainter(self.base_pixmap)
+        p.setRenderHint(QPainter.Antialiasing)
+        p.setBrush(QBrush(QColor("#161b22")))
+        p.setPen(QPen(QColor("#2d333b"), 1.5))
+        p.drawRoundedRect(QRectF(1, 1, 278, 318), 18, 18)
+        if not self.logo_pixmap.isNull():
+            lx = (280 - 140) // 2
+            ly = 35
+            p.drawPixmap(lx, ly, self.logo_pixmap)
+        if self.message:
+            p.setPen(QColor("#e6edf3"))
+            font = QFont("Segoe UI", 10)
+            font.setBold(True)
+            p.setFont(font)
+            text_rect = QRectF(10, 240, 260, 40)
+            p.drawText(text_rect, Qt.AlignHCenter | Qt.AlignTop, self.message)
+        p.end()
+
+        # Start light timer for the three-dot loading animation (refresh only dot rect)
         self.animation_timer = QTimer(self)
-        self.animation_timer.timeout.connect(self.update)
-        self.animation_timer.start(420)
+        self.animation_timer.timeout.connect(self._animate_tick)
+        self.animation_timer.start(120)
+
+    def _animate_tick(self) -> None:
+        self.frame = (self.frame + 1) % 60
+        # Only repaint the small dots area (cx=140, cy=215, height=30)
+        self.update(80, 200, 120, 35)
 
     def hideEvent(self, event) -> None:
         self.animation_timer.stop()
@@ -55,32 +80,19 @@ class AnimatedSplashScreen(QSplashScreen):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        # 1. Draw rounded background card (Background: #161b22, Border: #2d333b)
-        card_rect = QRectF(1, 1, 278, 318)
-        painter.setBrush(QBrush(QColor("#161b22")))
-        painter.setPen(QPen(QColor("#2d333b"), 1.5))
-        painter.drawRoundedRect(card_rect, 18, 18)
+        # Draw pre-rendered static base
+        painter.drawPixmap(0, 0, self.base_pixmap)
 
-        # 2. Draw logo (centered at top)
-        if not self.logo_pixmap.isNull():
-            lx = (280 - 140) // 2
-            ly = 35
-            painter.drawPixmap(lx, ly, self.logo_pixmap)
-
-        # 3. Draw three softly pulsing loading dots
+        # Draw smooth pulsing dots
         cx = 280 // 2
         cy = 215
+        dot_radius = 4
+        spacing = 20
 
-        self.frame = (self.frame + 1) % 3
-        dot_radius = 5
-        spacing = 22
         for i in range(3):
-            # Offset so the active dot is the one closest to the current frame,
-            # giving a smooth left-to-right travelling pulse.
-            phase = (self.frame - i) % 3
-            # Eased lift: 0 -> peak -> 0 using a sine curve
-            lift = -abs(math.sin((phase / 3.0) * math.pi)) * 7
-            alpha = 140 + int(115 * (1 - phase / 3.0))
+            phase = (self.frame / 10.0 - i * 0.8) % (2 * math.pi)
+            lift = -math.sin(phase) * 5 if math.sin(phase) > 0 else 0
+            alpha = int(140 + 115 * max(0.0, math.sin(phase)))
 
             dot_color = QColor(88, 166, 255, alpha)
             painter.setBrush(QBrush(dot_color))
@@ -88,16 +100,6 @@ class AnimatedSplashScreen(QSplashScreen):
             dx = cx + (i - 1) * spacing
             painter.drawEllipse(QRectF(dx - dot_radius, cy + lift - dot_radius,
                                        dot_radius * 2, dot_radius * 2))
-
-        # 4. Draw loading message
-        if self.message:
-            painter.setPen(QColor("#e6edf3"))
-            font = QFont("Segoe UI", 10)
-            font.setBold(True)
-            painter.setFont(font)
-
-            text_rect = QRectF(10, cy + 25, 260, 40)
-            painter.drawText(text_rect, Qt.AlignHCenter | Qt.AlignTop, self.message)
 
 
 WINDOWS_APP_ID = "UsefulUtilitiesCollection.DesktopApp.1.0"
@@ -225,7 +227,7 @@ def run() -> int:
                 window.tray_icon.showMessage(
                     t("app.guard_active_startup_title"),
                     t("app.guard_active_startup_body"),
-                    app_icon,
+                    QSystemTrayIcon.Information,
                     4000,
                 )
         QTimer.singleShot(30000, show_startup_notification)

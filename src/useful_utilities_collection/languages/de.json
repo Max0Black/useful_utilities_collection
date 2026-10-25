@@ -119,6 +119,10 @@
     "default_label": "Standard",
     "current_volume": "Aktuelle Lautstärke: {level}%",
     "target_volume": "Ziel-Lautstärke: {level}%",
+    "current_volume_title": "Aktuelle Lautstärke",
+    "target_volume_title": "Ziel-Lautstärke",
+    "button_sync_target_to_current": "Ziel auf aktuelle Lautstärke setzen",
+    "last_correction_detail": "{time} (von {previous}% auf {target}% korrigiert)",
     "auto_restore_checkbox": "Automatisch zurückstellen wenn's geändert wird",
     "button_enable": "Guard aktivieren",
     "button_disable": "Guard deaktivieren",
@@ -176,6 +180,7 @@
     "toast_shortcut_saved": "Tastenkombination gespeichert: {shortcut}",
     "toast_startup_enabled": "Autostart aktiviert.",
     "toast_startup_disabled": "Autostart deaktiviert.",
+    "toast_startup_failed": "Autostart konnte nicht konfiguriert werden.",
     "shortcut_placeholder": "Klicken zum Aufnehmen...",
     "shortcut_recording": "⏺ Tasten drücken..."
   },

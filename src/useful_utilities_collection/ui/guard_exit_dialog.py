@@ -1,21 +1,7 @@
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import (
-    QDialog,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QSizePolicy,
-    QSpacerItem,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
 from useful_utilities_collection.core.translation import t
-from useful_utilities_collection.ui.theme import COLOR_PALETTE
-
-COLOR_SUCCESS = COLOR_PALETTE["COLOR_SUCCESS"]
-COLOR_DANGER = COLOR_PALETTE["COLOR_DANGER"]
 
 
 class GuardExitDialog(QDialog):
@@ -57,7 +43,6 @@ class GuardExitDialog(QDialog):
         buttons.addWidget(self.cancel_button)
         buttons.addWidget(self.quit_button)
 
-
         root.addWidget(self.title_label)
         root.addWidget(self.body_label)
         root.addLayout(buttons)
@@ -70,34 +55,10 @@ class GuardExitDialog(QDialog):
         self.quit_button.setText(t("app.confirm_exit_quit"))
 
     def _equalize_button_widths(self) -> None:
-        """Ensure both buttons have the same width (based on the wider size hint)."""
+        """Ensure both buttons have the same width."""
         self.cancel_button.adjustSize()
         self.quit_button.adjustSize()
         width = max(self.cancel_button.sizeHint().width(),
-                    self.quit_button.sizeHint().width())
-
-        width += 20
+                    self.quit_button.sizeHint().width()) + 20
         self.cancel_button.setFixedWidth(width)
         self.quit_button.setFixedWidth(width)
-        
-        self.cancel_button.setStyleSheet(
-            f"QPushButton {{ background-color: {COLOR_SUCCESS}; color: white; border: none; border-radius: 8px; padding: 6px 12px; }} "
-            f"QPushButton:hover {{ background-color: {self._lighten_color(COLOR_SUCCESS, 0.2)}; }}"
-        )
-        self.quit_button.setStyleSheet(
-            f"QPushButton {{ background-color: {COLOR_DANGER}; color: white; border: none; border-radius: 8px; padding: 6px 12px; }} "
-            f"QPushButton:hover {{ background-color: {self._lighten_color(COLOR_DANGER, 0.2)}; }}"
-        )
-
-    @staticmethod
-    def _lighten_color(hex_color: str, factor: float) -> str:
-        """Lighten a hex color by a factor (0-1). Returns hex string."""
-        # Remove '#'
-        hex_color = hex_color.lstrip('#')
-        # Convert to RGB
-        r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-        # Lighten: move towards white
-        r = int(r + (255 - r) * factor)
-        g = int(g + (255 - g) * factor)
-        b = int(b + (255 - b) * factor)
-        return f'#{r:02x}{g:02x}{b:02x}'

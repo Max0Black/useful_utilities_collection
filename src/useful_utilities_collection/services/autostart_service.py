@@ -36,10 +36,9 @@ class AutostartService:
             return False
         reg_exists = False
         try:
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.RUN_KEY, 0, winreg.KEY_READ)
-            value, _ = winreg.QueryValueEx(key, self.APP_NAME)
-            winreg.CloseKey(key)
-            reg_exists = True
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.RUN_KEY, 0, winreg.KEY_READ) as key:
+                _value, _ = winreg.QueryValueEx(key, self.APP_NAME)
+                reg_exists = True
         except Exception:
             pass
         startup_dir = os.path.expandvars(r"%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup")
@@ -52,41 +51,39 @@ class AutostartService:
     # ---------------------------------------------------------------------
     def _enable_registry(self) -> bool:
         try:
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.RUN_KEY, 0, winreg.KEY_SET_VALUE)
-            exe_path = sys.executable
-            if "python.exe" in exe_path.lower() or "pythonw.exe" in exe_path.lower():
-                # Development mode – point to main.py
-                main_py_path = Path(__file__).resolve().parents[2] / "main.py"
-                cmd = f'"{exe_path}" "{main_py_path}" --minimized'
-            else:
-                cmd = f'"{exe_path}" --minimized'
-            winreg.SetValueEx(key, self.APP_NAME, 0, winreg.REG_SZ, cmd)
-            winreg.CloseKey(key)
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.RUN_KEY, 0, winreg.KEY_SET_VALUE) as key:
+                exe_path = sys.executable
+                if "python.exe" in exe_path.lower() or "pythonw.exe" in exe_path.lower():
+                    # Development mode – point to main.py
+                    main_py_path = Path(__file__).resolve().parents[2] / "main.py"
+                    cmd = f'"{exe_path}" "{main_py_path}" --minimized'
+                else:
+                    cmd = f'"{exe_path}" --minimized'
+                winreg.SetValueEx(key, self.APP_NAME, 0, winreg.REG_SZ, cmd)
             return True
         except Exception:
             return False
 
     def _disable_registry(self) -> bool:
         try:
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.RUN_KEY, 0, winreg.KEY_SET_VALUE)
-            try:
-                winreg.DeleteValue(key, self.APP_NAME)
-            except FileNotFoundError:
-                pass
-            winreg.CloseKey(key)
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.RUN_KEY, 0, winreg.KEY_SET_VALUE) as key:
+                try:
+                    winreg.DeleteValue(key, self.APP_NAME)
+                except FileNotFoundError:
+                    pass
             return True
         except Exception:
             return False
 
     # ---------------------------------------------------------------------
-    # Shortcut creation / removal – copied from SettingsService
+    # Shortcut creation / removal – via VBScript script or PowerShell
     # ---------------------------------------------------------------------
-    @staticmethod
-    def _create_startup_shortcut(enabled: bool) -> bool:
+    @classmethod
+    def _create_startup_shortcut(cls, enabled: bool) -> bool:
         """Create or delete the startup folder shortcut.
         Returns True on success (or when disabling and shortcut does not exist)."""
         startup_dir = os.path.expandvars(r"%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup")
-        shortcut_path = os.path.join(startup_dir, "UsefulUtilitiesCollection.lnk")
+        shortcut_path = os.path.join(startup_dir, f"{cls.APP_NAME}.lnk")
         if not enabled:
             if os.path.exists(shortcut_path):
                 try:
@@ -94,6 +91,7 @@ class AutostartService:
                 except Exception:
                     pass
             return True
+
         # Determine target and arguments
         exe_path = sys.executable
         if "python.exe" in exe_path.lower() or "pythonw.exe" in exe_path.lower():
@@ -105,18 +103,20 @@ class AutostartService:
             target_path = exe_path
             arguments = "--minimized"
             working_dir = str(Path(exe_path).parent)
-        # PowerShell command to create shortcut
-        ps_cmd = (
-            f'$WshShell = New-Object -ComObject WScript.Shell; '
-            f'$Shortcut = $WshShell.CreateShortcut("{shortcut_path}"); '
-            f'$Shortcut.TargetPath = "{target_path}"; '
-            f'$Shortcut.Arguments = "{arguments}"; '
-            f'$Shortcut.WorkingDirectory = "{working_dir}"; '
-            f'$Shortcut.Save()'
+
+        # Fast direct WScript.Shell invocation using cscript/wscript
+        vbs_cmd = (
+            f'Set sh = CreateObject("WScript.Shell"): '
+            f'Set sc = sh.CreateShortcut("{shortcut_path}"): '
+            f'sc.TargetPath = "{target_path}": '
+            f'sc.Arguments = "{arguments}": '
+            f'sc.WorkingDirectory = "{working_dir}": '
+            f'sc.Save'
         )
         try:
             subprocess.run(
-                ["powershell", "-NoProfile", "-Command", ps_cmd],
+                ["cscript", "//nologo", "//e:vbs", "-"],
+                input=vbs_cmd,
                 capture_output=True,
                 text=True,
                 check=True,
@@ -124,4 +124,23 @@ class AutostartService:
             )
             return True
         except Exception:
-            return False
+            # Fallback to powershell if cscript is not available
+            ps_cmd = (
+                f'$WshShell = New-Object -ComObject WScript.Shell; '
+                f'$Shortcut = $WshShell.CreateShortcut("{shortcut_path}"); '
+                f'$Shortcut.TargetPath = "{target_path}"; '
+                f'$Shortcut.Arguments = "{arguments}"; '
+                f'$Shortcut.WorkingDirectory = "{working_dir}"; '
+                f'$Shortcut.Save()'
+            )
+            try:
+                subprocess.run(
+                    ["powershell", "-NoProfile", "-Command", ps_cmd],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    creationflags=0x08000000  # CREATE_NO_WINDOW
+                )
+                return True
+            except Exception:
+                return False
