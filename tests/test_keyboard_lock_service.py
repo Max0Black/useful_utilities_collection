@@ -64,10 +64,70 @@ class TestKeyboardLockService(unittest.TestCase):
         service = KeyboardLockService()
         service.lock()
         self.assertTrue(service.is_locked())
-        
+
         service.shutdown()
         self.assertFalse(service.is_locked())
         mock_keyboard.unhook.assert_called_once()
+
+    @patch('useful_utilities_collection.services.keyboard_lock_service.keyboard')
+    def test_emergency_hotkey_triggers_callback(self, mock_keyboard):
+        mock_keyboard.parse_hotkey_combinations.return_value = [((42, 50, 56),)]
+        unlocked = []
+        service = KeyboardLockService(on_emergency_unlock=lambda: unlocked.append(True))
+        service.lock()
+
+        # Simulate keys for hotkey: Alt (56), Shift (42), M (50)
+        e_alt = unittest.mock.Mock(event_type="down", scan_code=56, name="alt")
+        e_shift = unittest.mock.Mock(event_type="down", scan_code=42, name="shift")
+        e_m = unittest.mock.Mock(event_type="down", scan_code=50, name="m")
+
+        service._on_key_event(e_alt)
+        service._on_key_event(e_shift)
+        self.assertEqual(len(unlocked), 0)
+
+        service._on_key_event(e_m)
+        self.assertEqual(len(unlocked), 1)
+
+    @patch('useful_utilities_collection.services.keyboard_lock_service.keyboard')
+    def test_emergency_hotkey_fallback_key_names(self, mock_keyboard):
+        mock_keyboard.parse_hotkey_combinations.return_value = []
+        unlocked = []
+        service = KeyboardLockService(on_emergency_unlock=lambda: unlocked.append(True))
+        service.lock()
+
+        e_alt = unittest.mock.Mock(event_type="down", scan_code=None)
+        e_alt.name = "left alt"
+        e_shift = unittest.mock.Mock(event_type="down", scan_code=None)
+        e_shift.name = "left shift"
+        e_m = unittest.mock.Mock(event_type="down", scan_code=None)
+        e_m.name = "m"
+
+        service._on_key_event(e_alt)
+        service._on_key_event(e_shift)
+        self.assertEqual(len(unlocked), 0)
+
+        service._on_key_event(e_m)
+        self.assertEqual(len(unlocked), 1)
+
+    @patch('useful_utilities_collection.services.keyboard_lock_service.keyboard')
+    def test_emergency_hotkey_release_resets(self, mock_keyboard):
+        mock_keyboard.parse_hotkey_combinations.return_value = [((42, 50, 56),)]
+        unlocked = []
+        service = KeyboardLockService(on_emergency_unlock=lambda: unlocked.append(True))
+        service.lock()
+
+        e_alt_dn = unittest.mock.Mock(event_type="down", scan_code=56, name="alt")
+        e_shift_dn = unittest.mock.Mock(event_type="down", scan_code=42, name="shift")
+        e_shift_up = unittest.mock.Mock(event_type="up", scan_code=42, name="shift")
+        e_m_dn = unittest.mock.Mock(event_type="down", scan_code=50, name="m")
+
+        service._on_key_event(e_alt_dn)
+        service._on_key_event(e_shift_dn)
+        service._on_key_event(e_shift_up)
+        service._on_key_event(e_m_dn)
+
+        # Shift was released before M was pressed, so it should not trigger
+        self.assertEqual(len(unlocked), 0)
 
 if __name__ == "__main__":
     unittest.main()

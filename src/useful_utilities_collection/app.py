@@ -224,7 +224,7 @@ def run() -> int:
         def show_startup_notification():
             if context.microphone_guard_service._guard_enabled:
                 from useful_utilities_collection.core.translation import t
-                window.tray_icon.showMessage(
+                window.tray_manager.show_message(
                     t("app.guard_active_startup_title"),
                     t("app.guard_active_startup_body"),
                     QSystemTrayIcon.Information,

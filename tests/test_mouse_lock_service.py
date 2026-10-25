@@ -141,12 +141,26 @@ class TestMouseLockService(unittest.TestCase):
         self.assertEqual(service._convert_portable_hotkey_to_keyboard(""), service.EMERGENCY_HOTKEY)
 
     def test_emergency_unlock_flow(self):
-        service = MouseLockService(self.mock_settings)
+        unlocked = []
+        service = MouseLockService(self.mock_settings, on_emergency_unlock=lambda: unlocked.append(True))
         self.assertFalse(service.consume_emergency_unlock_request())
-        
+
         service.request_emergency_unlock()
         self.assertTrue(service.consume_emergency_unlock_request())
         self.assertFalse(service.consume_emergency_unlock_request())
+        self.assertEqual(len(unlocked), 1)
+
+    def test_update_hotkey(self):
+        service = MouseLockService(self.mock_settings)
+        self.mock_keyboard.add_hotkey.reset_mock()
+        self.mock_keyboard.remove_hotkey.reset_mock()
+
+        self.mock_settings.get_mouse_lock_hotkey.return_value = "Ctrl+Shift+L"
+        service.update_hotkey()
+
+        self.mock_keyboard.add_hotkey.assert_called_once()
+        call_args = self.mock_keyboard.add_hotkey.call_args[0]
+        self.assertEqual(call_args[0], "ctrl+shift+l")
 
 if __name__ == "__main__":
     unittest.main()

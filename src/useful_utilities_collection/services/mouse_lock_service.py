@@ -34,8 +34,9 @@ class MouseLockService:
     WM_MOUSEHWHEEL = 0x020E
     WM_MOUSEMOVE = 0x0200
 
-    def __init__(self, settings_service=None):
+    def __init__(self, settings_service=None, on_emergency_unlock=None):
         self._settings_service = settings_service
+        self._on_emergency_unlock = on_emergency_unlock
         self._locked = False
         self._listener = None
         self._hotkey_handle = None
@@ -102,6 +103,14 @@ class MouseLockService:
 
     def request_emergency_unlock(self) -> None:
         self._emergency_unlock_requested = True
+        if self._on_emergency_unlock:
+            try:
+                self._on_emergency_unlock()
+            except Exception:
+                pass
+
+    def update_hotkey(self) -> None:
+        self._register_hotkey()
 
     def consume_emergency_unlock_request(self) -> bool:
         if not self._emergency_unlock_requested:
@@ -163,12 +172,13 @@ class MouseLockService:
         return "+".join(new_parts)
 
     def _register_hotkey(self) -> None:
+        self._cleanup_hotkey()
         try:
             hotkey_str = self.EMERGENCY_HOTKEY
             if self._settings_service:
                 portable_hotkey = self._settings_service.get_mouse_lock_hotkey()
                 hotkey_str = self._convert_portable_hotkey_to_keyboard(portable_hotkey)
-            
+
             self._hotkey_handle = keyboard.add_hotkey(
                 hotkey_str,
                 self.request_emergency_unlock,

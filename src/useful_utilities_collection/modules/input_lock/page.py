@@ -278,15 +278,21 @@ class InputLockPage(BasePage):
 
         self.context.input_lock_service.state.changed.connect(self.refresh)
         self.context.state_changed.connect(self.refresh)
+        self.context.input_lock_service.add_emergency_unlock_callback(self._handle_emergency_unlock)
 
     # ── Handlers ──────────────────────────────────────────────────────
+    def _handle_emergency_unlock(self) -> None:
+        if self.countdown_manager.is_active:
+            self.countdown_manager.stop()
+        self.controller.unlock_all()
+        self.show_toast(t("input_lock.toast_emergency_unlock"))
+        self.refresh()
+
     def on_mouse_enforce_tick(self) -> None:
         self.controller.enforce()
         mouse_service = self.context.input_lock_service.mouse_lock_service
         if mouse_service.consume_emergency_unlock_request():
-            if not self.countdown_manager.is_active and not self.context.input_lock_service.keyboard_locked():
-                self.context.input_lock_service.unlock_mouse()
-                self.show_toast(t("input_lock.toast_emergency_unlock"))
+            self._handle_emergency_unlock()
 
     def on_toggle_keyboard(self) -> None:
         if self.countdown_manager.is_active:
@@ -367,7 +373,10 @@ class InputLockPage(BasePage):
 
         self.timer_display_panel.show()
         self.timer_info_label.hide()
-        self.timer_emergency_label.hide()
+        settings = self.context.settings_service
+        shortcut_text = settings.get_mouse_lock_hotkey() if settings else "Shift+Alt+M"
+        self.timer_emergency_label.setText(t("input_lock.emergency_hint", shortcut=shortcut_text))
+        self.timer_emergency_label.show()
 
         self.keyboard_button.setEnabled(False)
         self.mouse_button.setEnabled(False)
@@ -454,15 +463,14 @@ class InputLockPage(BasePage):
             self.overview_status.setProperty("role", "danger")
             if active_countdown:
                 self.overview_hint.setText(t("input_lock.countdown_unlock_instructions"))
-                self.overview_emergency_label.setText("")
             else:
                 self.overview_hint.setText(t("input_lock.status_hint_both"))
-                self.overview_emergency_label.setText(t("input_lock.status_emergency_disabled"))
+            self.overview_emergency_label.setText(t("input_lock.emergency_hint", shortcut=shortcut_text))
         elif keyboard_locked and not active_countdown:
             self.overview_status.setText(t("input_lock.status_keyboard_locked"))
             self.overview_status.setProperty("role", "danger")
             self.overview_hint.setText(t("input_lock.status_hint_keyboard"))
-            self.overview_emergency_label.setText("")
+            self.overview_emergency_label.setText(t("input_lock.emergency_hint", shortcut=shortcut_text))
         elif mouse_locked and not active_countdown:
             self.overview_status.setText(t("input_lock.status_mouse_locked"))
             self.overview_status.setProperty("role", "danger")

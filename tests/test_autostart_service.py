@@ -83,6 +83,30 @@ class TestAutostartService(unittest.TestCase):
             self.assertFalse(svc.is_enabled())
         self.platform_patcher.start()
 
+    def test_enable_calls_cscript_and_creates_shortcut(self):
+        svc = AutostartService()
+        result = svc.enable()
+        self.assertTrue(result)
+        self.mock_subprocess.run.assert_called()
+        args, kwargs = self.mock_subprocess.run.call_args
+        self.assertEqual(args[0][0], "cscript")
+
+    def test_get_target_executable_prioritizes_compiled_exe(self):
+        with patch.object(sys, "executable", "C:\\Python311\\python.exe"):
+            with patch("pathlib.Path.exists", autospec=True) as mock_exists:
+                mock_exists.side_effect = lambda p: "dist" in str(p) and str(p).endswith("UUC.exe")
+                target, args, workdir = AutostartService._get_target_executable_and_args()
+                self.assertTrue(target.endswith("UUC.exe"))
+                self.assertEqual(args, "--minimized")
+
+    def test_get_target_executable_when_frozen_exe(self):
+        custom_exe_path = r"D:\Tools\UUC\UUC.exe"
+        with patch.object(sys, "executable", custom_exe_path):
+            target, args, workdir = AutostartService._get_target_executable_and_args()
+            self.assertEqual(target, custom_exe_path)
+            self.assertEqual(args, "--minimized")
+            self.assertEqual(workdir, r"D:\Tools\UUC")
+
 
 if __name__ == "__main__":
     unittest.main()

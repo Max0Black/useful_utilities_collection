@@ -34,4 +34,9 @@ class AppContext(QObject):
         self.state.microphone_guard_active = self.microphone_guard_service._guard_enabled
 
     def notify_state_changed(self) -> None:
+        if hasattr(self, "input_lock_service") and self.input_lock_service:
+            try:
+                self.input_lock_service.update_hotkey()
+            except Exception:
+                pass
         self.state_changed.emit()
