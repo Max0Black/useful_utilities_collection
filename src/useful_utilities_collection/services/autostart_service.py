@@ -46,19 +46,38 @@ class AutostartService:
         shortcut_exists = os.path.exists(shortcut_path)
         return reg_exists or shortcut_exists
 
+    @classmethod
+    def _get_target_executable_and_args(cls) -> tuple[str, str, str]:
+        """Resolves target path, arguments, and working directory for autostart.
+        Always points to the exact executable where the application is located and started from."""
+        # When frozen by PyInstaller, sys.executable points directly to the running .exe
+        # sys.argv[0] also holds the path to the executable
+        current_exe = Path(sys.executable).resolve()
+        is_python = "python.exe" in current_exe.name.lower() or "pythonw.exe" in current_exe.name.lower()
+
+        if not is_python:
+            # Running directly as standalone EXE — always use the current location of this EXE!
+            return str(current_exe), "--minimized", str(current_exe.parent)
+
+        # Running via Python interpreter in dev environment:
+        # Check if a compiled UUC.exe exists in the local build dist directory
+        project_root = Path(__file__).resolve().parent.parent.parent.parent
+        dist_exe = project_root / "dist" / "UUC.exe"
+        if dist_exe.exists():
+            return str(dist_exe.resolve()), "--minimized", str(dist_exe.parent.resolve())
+
+        # Fallback to dev python script only if no compiled EXE exists at all
+        main_py = Path(__file__).resolve().parent.parent / "main.py"
+        return str(current_exe), f'"{main_py}" --minimized', str(main_py.parent)
+
     # ---------------------------------------------------------------------
     # Internal helpers for registry manipulation
     # ---------------------------------------------------------------------
     def _enable_registry(self) -> bool:
         try:
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.RUN_KEY, 0, winreg.KEY_SET_VALUE) as key:
-                exe_path = sys.executable
-                if "python.exe" in exe_path.lower() or "pythonw.exe" in exe_path.lower():
-                    # Development mode – point to main.py
-                    main_py_path = Path(__file__).resolve().parents[2] / "main.py"
-                    cmd = f'"{exe_path}" "{main_py_path}" --minimized'
-                else:
-                    cmd = f'"{exe_path}" --minimized'
+                target_path, arguments, _ = self._get_target_executable_and_args()
+                cmd = f'"{target_path}" {arguments}'.strip()
                 winreg.SetValueEx(key, self.APP_NAME, 0, winreg.REG_SZ, cmd)
             return True
         except Exception:
@@ -92,31 +111,26 @@ class AutostartService:
                     pass
             return True
 
-        # Determine target and arguments
-        exe_path = sys.executable
-        if "python.exe" in exe_path.lower() or "pythonw.exe" in exe_path.lower():
-            main_py_path = Path(__file__).resolve().parents[2] / "main.py"
-            target_path = exe_path
-            arguments = f'"{main_py_path}" --minimized'
-            working_dir = str(main_py_path.parent)
-        else:
-            target_path = exe_path
-            arguments = "--minimized"
-            working_dir = str(Path(exe_path).parent)
+        # Determine target, arguments and working directory
+        target_path, arguments, working_dir = cls._get_target_executable_and_args()
 
-        # Fast direct WScript.Shell invocation using cscript/wscript
-        vbs_cmd = (
-            f'Set sh = CreateObject("WScript.Shell"): '
-            f'Set sc = sh.CreateShortcut("{shortcut_path}"): '
-            f'sc.TargetPath = "{target_path}": '
-            f'sc.Arguments = "{arguments}": '
-            f'sc.WorkingDirectory = "{working_dir}": '
-            f'sc.Save'
+        # Fast direct WScript.Shell invocation using a temporary .vbs script
+        import tempfile
+        vbs_content = (
+            f'Set sh = CreateObject("WScript.Shell")\r\n'
+            f'Set sc = sh.CreateShortcut("{shortcut_path}")\r\n'
+            f'sc.TargetPath = "{target_path}"\r\n'
+            f'sc.Arguments = "{arguments}"\r\n'
+            f'sc.WorkingDirectory = "{working_dir}"\r\n'
+            f'sc.Save\r\n'
         )
+        temp_vbs = None
         try:
+            with tempfile.NamedTemporaryFile(suffix=".vbs", delete=False, mode="w", encoding="utf-8") as f:
+                f.write(vbs_content)
+                temp_vbs = f.name
             subprocess.run(
-                ["cscript", "//nologo", "//e:vbs", "-"],
-                input=vbs_cmd,
+                ["cscript", "//nologo", temp_vbs],
                 capture_output=True,
                 text=True,
                 check=True,
@@ -144,3 +158,9 @@ class AutostartService:
                 return True
             except Exception:
                 return False
+        finally:
+            if temp_vbs and os.path.exists(temp_vbs):
+                try:
+                    os.remove(temp_vbs)
+                except Exception:
+                    pass
